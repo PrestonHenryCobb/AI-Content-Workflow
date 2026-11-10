@@ -163,9 +163,35 @@ def build_audio(narration: Path, total: float, out: Path) -> Path:
     ffmpeg("-i", str(mix), "-af",
            f"loudnorm=I=-14:TP=-2.0:LRA=11:measured_I={j['input_i']}:measured_TP={j['input_tp']}"
            f":measured_LRA={j['input_lra']}:measured_thresh={j['input_thresh']}"
-           f":offset={j['target_offset']}:linear=true,alimiter=limit=0.79:level=false",
+           f":offset={j['target_offset']}:linear=true,"
+           "aresample=192000,alimiter=limit=0.79:level=false,aresample=48000",
            "-ar", "48000", str(out))
     return out
+
+
+def enforce_true_peak(video: Path, ceiling: float = -1.2, max_passes: int = 4) -> float:
+    """Measure the encoded file; if AAC overshoot pushed true peak above `ceiling`, re-encode
+    only the audio (always from the original) with less gain until it fits.
+    Returns the total gain applied (dB)."""
+    from pipeline.media import loudness
+
+    _, peak = loudness(video)
+    if peak <= ceiling:
+        return 0.0
+    src = video.with_name(video.stem + "_src" + video.suffix)
+    video.replace(src)
+    gain = 0.0
+    try:
+        for _ in range(max_passes):
+            gain += ceiling - peak - 0.3
+            ffmpeg("-i", str(src), "-c:v", "copy", "-af", f"volume={gain:.2f}dB",
+                   "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(video))
+            _, peak = loudness(video)
+            if peak <= ceiling:
+                break
+    finally:
+        src.unlink(missing_ok=True)
+    return gain
 
 
 def render_short(script: Script, timings: list[LineTiming], narration: Path, stills_dir: Path,
@@ -239,4 +265,5 @@ def render_video(script: Script, timings: list[LineTiming], narration: Path, sti
     finally:
         if proc.poll() is None:
             proc.kill()
+    enforce_true_peak(out)
     return out

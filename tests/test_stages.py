@@ -178,3 +178,16 @@ def test_offline_stub_counts_calls(state, settings):
 
 def test_words_dataclass():
     assert Word("a", 0, 1).end == 1
+
+
+def test_enforce_true_peak_fixes_hot_audio(tmp_path):
+    from pipeline.media import ffmpeg, loudness
+    from pipeline.stages.render import enforce_true_peak
+
+    v = tmp_path / "hot.mp4"
+    ffmpeg("-f", "lavfi", "-t", "2", "-i", "color=black:s=32x32", "-f", "lavfi", "-t", "2",
+           "-i", "anoisesrc=color=white:amplitude=0.9:seed=1", "-shortest", "-c:v", "libx264",
+           "-c:a", "aac", "-b:a", "192k", str(v))
+    assert loudness(v)[1] > -1.0
+    assert enforce_true_peak(v) < 0
+    assert loudness(v)[1] <= -1.2

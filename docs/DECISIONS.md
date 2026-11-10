@@ -111,8 +111,11 @@
   6–8 expanded chapters runs about 14–22 min.
 - **D32. Audio mastering:** loudnorm two-pass to -14 LUFS, then a -2 dBFS limiter because
   AAC encoding overshoots true peak. Check range: -16.5 to -12.5 LUFS, true peak ≤ -1 dBTP.
-  (YouTube only turns loud videos down, so slightly quiet is harmless.) Re-verify on the
-  first live Kokoro run.
+  (YouTube only turns loud videos down, so slightly quiet is harmless.) The limiter runs at
+  192 kHz (approximate true-peak limiting), and after every render `enforce_true_peak`
+  measures the encoded file and re-encodes only the audio, lowering gain until true peak
+  ≤ -1.2 dBTP. That holds across FFmpeg builds; the CI runner's build overshot where the
+  dev container's didn't.
 
 - **D33. Learning loop:** daily analytics pull (videos 2–28 days old; YouTube Analytics has
   its own quota). Success = average % viewed ≥ the median of all measured videos. Thompson
