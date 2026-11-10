@@ -44,6 +44,14 @@ class FakeIssues:
         return {}
 
 
+def test_alerts_suppressed_while_disabled(monkeypatch, capsys):
+    monkeypatch.setenv("PIPELINE_ENABLED", "false")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
+    monkeypatch.setenv("GITHUB_TOKEN", "t")
+    assert alerts.notify("Buffer low", "x") == "printed"
+    assert "suppressed" in capsys.readouterr().out
+
+
 def test_alert_creates_then_comments(monkeypatch):
     monkeypatch.setenv("GITHUB_REPOSITORY", "o/r")
     gh = FakeIssues()
