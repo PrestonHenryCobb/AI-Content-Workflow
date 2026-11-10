@@ -74,6 +74,15 @@ def cmd_make_short(args: argparse.Namespace) -> int:
         return 1
     for c in res.report.checks:
         print(f"{'PASS' if c.passed else 'FAIL'}  {c.name:14} {c.detail}")
+    src_file = res.job.path("art_sources.json")
+    if src_file.exists():
+        src = json.loads(src_file.read_text())
+        counts: dict[str, int] = {}
+        for k, v in src.items():
+            if not k.endswith("_error"):
+                counts[v] = counts.get(v, 0) + 1
+        errors = [v for k, v in src.items() if k.endswith("_error")]
+        print(f"stills: {counts}" + (f"  (flux errors: {errors[:2]})" if errors else ""))
     print(f"video: {res.video}")
     return 0 if res.report.passed else 2
 
