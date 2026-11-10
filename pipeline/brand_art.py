@@ -36,9 +36,11 @@ class Cam:
     f: float
     cam_y: float = 1.45
     horizon: float = 0.5
+    cam_x: float = 0.0
 
     def p(self, x: float, y: float, z: float) -> tuple[float, float]:
-        return (self.w / 2 + self.f * x / z,
+        z = max(z, 0.05)
+        return (self.w / 2 + self.f * (x - self.cam_x) / z,
                 self.h * self.horizon - self.f * (y - self.cam_y) / z)
 
 
@@ -46,21 +48,28 @@ def _fog(z: float, near: float = 1.0, far: float = 16.0) -> float:
     return float(min(1.0, max(0.0, (z - near) / (far - near))) ** 0.8)
 
 
-def hallway(w: int, h: int, seed: int = 7, figure: bool = True) -> Image.Image:
-    """One-point-perspective motel/school corridor: doors, buzzing lights, one dead."""
+def hallway(w: int, h: int, seed: int = 7, figure: bool = True, cam_z: float = 0.0,
+            cam_x: float = 0.0, flicker: float = 1.0) -> Image.Image:
+    """One-point-perspective motel/school corridor: doors, buzzing lights, one dead.
+
+    cam_z/cam_x move the camera (for animated shots); flicker scales light brightness.
+    """
     rng = np.random.default_rng(seed)
-    cam = Cam(w, h, f=h * 0.9)
+    cam = Cam(w, h, f=min(w, h) * 0.9 if h > w else h * 0.9)
+    cam.cam_x = cam_x
     img = Image.new("RGB", (w, h), FOG)
     glow = Image.new("RGB", (w, h), (0, 0, 0))
     d, g = ImageDraw.Draw(img), ImageDraw.Draw(glow)
     hw, ceil, seg = 1.15, 2.6, 1.2
     wall, floor_a, floor_b, ceil_c = (128, 140, 112), (104, 92, 74), (72, 66, 58), (88, 90, 80)
     door_c, frame_c = (58, 40, 30), (120, 116, 96)
-    zs = [1.0 + i * seg for i in range(14)]
+    zs = [1.0 - cam_z + i * seg for i in range(15)]
     dead_light = int(rng.integers(2, 6))
 
     for i in reversed(range(len(zs) - 1)):
-        z0, z1 = zs[i], zs[i + 1]
+        z0, z1 = max(zs[i], 0.3), zs[i + 1]
+        if z1 <= 0.3:
+            continue
         fz = _fog((z0 + z1) / 2)
         lit = 0.25 if i % 3 == dead_light % 3 and i // 3 == 1 else 1.0
 
@@ -93,13 +102,15 @@ def hallway(w: int, h: int, seed: int = 7, figure: bool = True) -> Image.Image:
             col = _mix(SICKLY if on else (40, 44, 40), FOG, fz * 0.7)
             d.polygon(quad, fill=col)
             if on:
-                g.polygon(quad, fill=_mix(SICKLY, (0, 0, 0), fz * 0.6))
+                g.polygon(quad, fill=_mix((0, 0, 0), _mix(SICKLY, (0, 0, 0), fz * 0.6), flicker))
                 pool = [cam.p(-1.1, 0.001, a - 0.4), cam.p(1.1, 0.001, a - 0.4),
                         cam.p(1.1, 0.001, b + 0.6), cam.p(-1.1, 0.001, b + 0.6)]
-                g.polygon(pool, fill=_mix((110, 120, 84), (0, 0, 0), fz * 0.6))
+                g.polygon(pool, fill=_mix((0, 0, 0), _mix((110, 120, 84), (0, 0, 0), fz * 0.6),
+                                          flicker))
 
     if figure:  # faceless silhouette standing far down the hall
-        z, col = 9.6, _mix((6, 6, 6), FOG, _fog(9.6) * 0.25)
+        z = 9.6 - cam_z
+        col = _mix((6, 6, 6), FOG, _fog(z) * 0.25)
         body = [cam.p(-0.22, 0, z), cam.p(0.22, 0, z), cam.p(0.26, 1.35, z), cam.p(0.18, 1.5, z),
                 cam.p(-0.18, 1.5, z), cam.p(-0.26, 1.35, z)]
         d.polygon(body, fill=col)

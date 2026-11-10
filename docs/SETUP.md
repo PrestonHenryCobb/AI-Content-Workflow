@@ -14,7 +14,7 @@ click-paths as each integration is built.
 | 5 | Submit the **YouTube API compliance audit** — until approved, API uploads are forced private | 4 | ☐ |
 | 6 | Request a YouTube quota increase (default 10,000 units/day ≈ 6 uploads) | 4 | ☐ |
 | 7 | On your own computer: install Claude Code, run `claude setup-token` (uses your Pro plan), save the token as GitHub secret `CLAUDE_CODE_OAUTH_TOKEN`. Do **not** add an `ANTHROPIC_API_KEY` secret | 3 | ☐ |
-| 8 | fal.ai (or Replicate) API key for Flux Schnell images | 3 | ☐ |
+| 8 | fal.ai API key for Flux Schnell stills → GitHub secret `FAL_KEY` (optional: without it stills are procedural) | 3 | ☐ |
 | 9 | Cloud bucket (Cloudflare R2 free tier recommended) + access keys | 5 | ☐ |
 | 10 | Discord (or Slack) webhook URL for alerts | 5 | ☐ |
 | 11 | Pick the channel name from the shortlist in `brand/name_shortlist.md` | 2 | ☑ Cold Save |

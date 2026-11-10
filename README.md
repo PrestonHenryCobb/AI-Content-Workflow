@@ -13,7 +13,7 @@ session starts from it.
 - [x] Phase 0: spec ("god prompt")
 - [x] Phase 1: skeleton, config, state DB, budget governor, CI
 - [x] Phase 2: brand package (Cold Save)
-- [ ] Phase 3: offline vertical slice (one case → finished video)
+- [x] Phase 3: vertical slice (one case → finished video) — offline verified; live run via Actions → slice
 - [ ] Phase 4: YouTube publisher + buffer
 - [ ] Phase 5: GitHub Actions automation, alerts, weekly digest
 - [ ] Phase 6: weekly compilation
@@ -30,6 +30,7 @@ uv run pytest -q          # tests
 uv run acw check-config   # validate config
 uv run acw budget         # weekly spend + Claude usage vs. caps
 uv run acw status         # kill switch, buffer, quota
+uv run acw make-short --job-id test --offline   # render a fictional test short (~2 min)
 ```
 
 ## Layout

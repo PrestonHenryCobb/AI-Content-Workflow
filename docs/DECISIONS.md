@@ -48,11 +48,36 @@
   original, regenerable with one command. The same PS2 pass will be applied to every video
   frame. Pixel text uses Pillow's built-in bitmap font, so there's no font license to track.
 
+- **D17. Hero "scene3d" shots use a built-in Python low-poly renderer, not Blender (for now).**
+  `pipeline/scenes.py` projects flat-shaded polygons with distance fog at 360x640; every
+  frame renders in milliseconds on a CI CPU, so there's real 3D camera motion with no Blender
+  install or render minutes. Templates: hallway, night_road, room. Blender stays the upgrade
+  path for scenes this renderer can't express. The clip library therefore stores only clips
+  that are expensive to make (paid image-to-video, future Blender renders); procedural shots
+  are cheaper to re-render than to decode.
+- **D18. Fewer Claude calls per short (Pro limits):** metadata (titles, hashtags, pinned
+  comment) comes from the script call; the separate metadata stage is reserved for the
+  weekly compilation. Text gates (fact + policy) run *before* voice/art/render, so a
+  rejected script costs no render time. Typical short: verify 1, script 1, fact 1,
+  policy 1, visual 1, plus ~0.2 discover = **~5–6 calls**, up to ~10 with rewrites.
+- **D19. Offline mode uses a clearly fictional fixture case** (example.org sources,
+  "TEST CASE (fictional)" in every line) so CI can exercise the full render chain without
+  network or subscription usage, and without anyone writing invented "facts" about a real case.
+- **D20. Captions never show a fake date stamp.** The overlay shows REC + case number only,
+  so nothing implies the visuals are real footage.
+- **D21. Ambient audio bed is generated** (brown noise, low hum, static burst), so there's no
+  music licensing in v1. A licensed library (e.g. Epidemic Sound) can replace it later.
+- **D22. The slice runs in GitHub Actions**, because the dev container's network blocks research
+  sites, Hugging Face (Kokoro weights) and fal.ai. Media deps (CPU torch, Kokoro,
+  faster-whisper) install in the workflow and stay out of `uv.lock`.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.
 
 ## Known risks
+- **Governor state lives in `data/state.db`, which is ephemeral on Actions runners.** Until
+  Phase 5 persists it (bucket or a state branch), caps only apply within a single run.
 - **Pro plan limits are the tightest tier and are shared with the owner's own Claude use.**
   Mitigated by the overnight window, adaptive caps and the buffer. If the owner often hits
   limits themselves, options are: Max plan, 2 shorts/day, or opting into the API backend.

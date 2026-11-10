@@ -60,6 +60,22 @@ def cmd_status(_: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_make_short(args: argparse.Namespace) -> int:
+    import logging
+
+    from pipeline.run import make_short
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    res = make_short(args.job_id, case_hint=args.case, offline=args.offline, urgent=args.urgent)
+    if res.report is None:
+        print(f"job {args.job_id}: stopped before QA (see `acw status` / state DB)")
+        return 1
+    for c in res.report.checks:
+        print(f"{'PASS' if c.passed else 'FAIL'}  {c.name:14} {c.detail}")
+    print(f"video: {res.video}")
+    return 0 if res.report.passed else 2
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="acw", description="AI-Content-Workflow pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -69,6 +85,14 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("--json", action="store_true")
     b.set_defaults(fn=cmd_budget)
     sub.add_parser("status", help="kill switch, buffer, quota").set_defaults(fn=cmd_status)
+    m = sub.add_parser("make-short", help="produce one short end to end (no upload)")
+    m.add_argument("--job-id", required=True)
+    m.add_argument("--case", default="", help="optional hint: a specific case or theme")
+    m.add_argument("--offline", action="store_true",
+                   help="fictional fixture case, silent voice, procedural art; no network")
+    m.add_argument("--urgent", action="store_true",
+                   help="allow Claude calls outside the overnight window")
+    m.set_defaults(fn=cmd_make_short)
     args = p.parse_args(argv)
     return int(args.fn(args))
 

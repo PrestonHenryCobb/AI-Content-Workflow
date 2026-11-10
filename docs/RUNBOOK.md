@@ -10,6 +10,13 @@ is needed. Local check: `uv run acw status`.
 | `uv run acw check-config` | validates every `config/*.yaml` |
 | `uv run acw budget` | this week's spend, Claude calls today/week vs. caps, cooldown, degradations |
 | `uv run acw status` | kill switch, buffer depth, YouTube quota left today |
+| `uv run acw make-short --job-id X [--case "hint"] [--urgent]` | produce one short (no upload); resumes if re-run |
+| `uv run acw make-short --job-id X --offline` | fictional test short, no network (CI does this on every push) |
+
+## Making a test short in GitHub
+Actions → **slice** → Run workflow (optionally type a case or theme). When it finishes,
+download the `slice-<run id>` artifact: `data/jobs/slice-*/short.mp4` plus every
+intermediate file (case.json, fact_pack.json, script.json, qa.json, narration.wav, stills/).
 
 ## Claude subscription (Pro) behavior
 - All Claude calls run through `claude -p` on your Pro plan; no API bill.

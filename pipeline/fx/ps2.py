@@ -123,3 +123,30 @@ def apply_ps2(img: Image.Image, out_size: tuple[int, int] | None = None,
             big[y:y + hgt] = big[y:y + hgt] * 0.6 + 0.25
 
     return _to_img(big)
+
+
+def ps2_internal(frame: NDArray[np.uint8], p: PS2Params, rng: np.random.Generator,
+                 wobble_phase: float = 0.0) -> NDArray[np.uint8]:
+    """Per-frame PS2 pass at internal resolution (video path): wobble, grade, dither."""
+    a = frame.astype(np.float32) / 255.0
+    if p.vertex_wobble_px > 0:
+        h, w, _ = a.shape
+        dx = np.round(p.vertex_wobble_px * np.sin(np.arange(h) / 23.0 + wobble_phase)).astype(int)
+        cols = np.clip(np.arange(w)[None, :] + dx[:, None], 0, w - 1)
+        a = a[np.arange(h)[:, None], cols]
+    if p.grade:
+        a = _grade(a, p.crush_blacks)
+    a = _dither_quantize(a, p.levels_per_channel)
+    out: NDArray[np.uint8] = (a * 255 + 0.5).astype(np.uint8)
+    return out
+
+
+def upscale_scanlines(frame: NDArray[np.uint8], factor: int,
+                      strength: float) -> NDArray[np.uint8]:
+    """Nearest-neighbour integer upscale with darkened bottom row of every source pixel."""
+    big = np.repeat(np.repeat(frame, factor, axis=0), factor, axis=1)
+    if strength > 0 and factor > 1:
+        big = big.copy()
+        big[factor - 1::factor] = (big[factor - 1::factor] * (1 - strength)).astype(np.uint8)
+    out: NDArray[np.uint8] = big
+    return out

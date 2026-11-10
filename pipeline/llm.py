@@ -16,7 +16,7 @@ import tempfile
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from pipeline.budget import Governor, SubscriptionLimited
 from pipeline.config import Settings, StageModel
@@ -45,6 +45,17 @@ class LLMResult:
     duration_s: float
 
 
+class Completer(Protocol):
+    """What stages need from an LLM client (real `LLM` or `offline.OfflineLLM`)."""
+
+    settings: Settings
+
+    def complete(self, stage_name: str, prompt: str, *, system: str | None = None,
+                 json_schema: dict[str, Any] | None = None, job_id: str | None = None,
+                 urgent: bool = False, timeout_s: int = 900, add_dirs: Sequence[str] = (),
+                 extra_tools: Sequence[str] = ()) -> LLMResult: ...
+
+
 def child_env() -> dict[str, str]:
     env = {k: v for k, v in os.environ.items() if k not in _BILLING_ENV_VARS}
     env.setdefault("DISABLE_AUTOUPDATER", "1")
@@ -52,9 +63,16 @@ def child_env() -> dict[str, str]:
 
 
 def build_command(stage: StageModel, system: str | None, json_schema: dict[str, Any] | None,
-                  claude_bin: str = "claude") -> list[str]:
+                  claude_bin: str = "claude", add_dirs: Sequence[str] = (),
+                  extra_tools: Sequence[str] = ()) -> list[str]:
+    tools = list(dict.fromkeys([*stage.tools, *extra_tools]))
     cmd = [claude_bin, "-p", "--output-format", "json", "--model", stage.model,
-           "--effort", stage.effort, "--tools", ",".join(stage.tools)]
+           "--effort", stage.effort, "--tools", ",".join(tools)]
+    if tools:
+        # Headless runs can't answer permission prompts; pre-approve exactly these tools.
+        cmd += ["--allowedTools", *tools]
+    for d in add_dirs:
+        cmd += ["--add-dir", d]
     if stage.fallback:
         cmd += ["--fallback-model", stage.fallback]
     if system:
@@ -83,13 +101,15 @@ class LLM:
         job_id: str | None = None,
         urgent: bool = False,
         timeout_s: int = 900,
+        add_dirs: Sequence[str] = (),
+        extra_tools: Sequence[str] = (),
     ) -> LLMResult:
         stage = self.settings.models.stages[stage_name]
         if self.settings.models.backend == "api":
             raise NotImplementedError(
                 "API backend is disabled by design (DECISIONS D14); owner must opt in"
             )
-        cmd = build_command(stage, system, json_schema, self.claude_bin)
+        cmd = build_command(stage, system, json_schema, self.claude_bin, add_dirs, extra_tools)
         last_err = ""
         for attempt in range(self.max_retries + 1):
             self.gov.authorize_llm(stage_name, urgent=urgent)
@@ -145,4 +165,5 @@ def _result(payload: dict[str, Any], model: str, schema: dict[str, Any] | None,
                      output_tokens=usage.get("output_tokens"), duration_s=dt)
 
 
-__all__: Sequence[str] = ("LLM", "LLMError", "LLMResult", "build_command", "child_env")
+__all__: Sequence[str] = ("LLM", "Completer", "LLMError", "LLMResult", "build_command",
+                          "child_env")

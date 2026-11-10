@@ -146,8 +146,9 @@ Rules: present tense for tension, second person sparingly, no speculation stated
 - **Motion stack ($0 by default — see `config/animation.yaml`):**
   1. **2.5D parallax** on every still: local depth estimation (Depth Anything V2 small,
      CPU) → layered camera moves (push-in, dolly, handheld sway).
-  2. **Procedural low-poly 3D scenes in Blender** (headless, CPU, 480p, Workbench/low-sample
-     Cycles) for 2–3 hero shots per short. Claude emits a small `scene_spec.json`
+  2. **Procedural low-poly 3D scenes** for 2–3 hero shots per short: built-in Python
+     renderer (`pipeline/scenes.py`, DECISIONS D17); Blender (headless, CPU, 480p) is the
+     upgrade path for scenes it can't express. Claude emits a small `scene_spec.json`
      (location template, props, lights, fog, camera path, duration); `render/blender/`
      builds it from CC0 kits (Kenney, Quaternius, Poly Pizza CC0) and parametric templates
      (hallway, motel room, gas station, forest road, interrogation room, living room).

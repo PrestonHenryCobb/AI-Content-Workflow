@@ -1,0 +1,70 @@
+# Phase 3 vertical slice: research -> fact pack -> script -> voice -> art -> render -> QA.
+# Produces one short as a downloadable artifact. Never uploads anywhere.
+name: slice
+on:
+  workflow_dispatch:
+    inputs:
+      case_hint:
+        description: "Optional: a specific case or theme to research"
+        required: false
+        default: ""
+      offline:
+        description: "Offline mode (fictional fixture case, no Claude/Flux calls)"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: slice
+  cancel-in-progress: false
+jobs:
+  make-short:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+      FAL_KEY: ${{ secrets.FAL_KEY }}
+      DISABLE_AUTOUPDATER: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: System packages
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng
+      - name: Check secrets
+        if: ${{ !inputs.offline }}
+        run: |
+          if [ -z "$CLAUDE_CODE_OAUTH_TOKEN" ]; then
+            echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret is missing (run 'claude setup-token' locally, SETUP step 7)"; exit 1
+          fi
+          if [ -z "$FAL_KEY" ]; then echo "::warning::FAL_KEY not set: stills will be procedural"; fi
+      - name: Claude Code CLI
+        if: ${{ !inputs.offline }}
+        run: npm install -g @anthropic-ai/claude-code && claude --version
+      - name: Python deps
+        run: uv sync --locked
+      - name: Media deps (CPU torch, Kokoro TTS, faster-whisper)
+        if: ${{ !inputs.offline }}
+        run: |
+          uv pip install --index-url https://download.pytorch.org/whl/cpu torch
+          uv pip install "kokoro==0.9.4" "soundfile>=0.12" "faster-whisper>=1.1,<2"
+      - name: Make short
+        env:
+          CASE_HINT: ${{ inputs.case_hint }}
+          OFFLINE: ${{ inputs.offline }}
+        run: |
+          args=(--job-id "slice-${GITHUB_RUN_ID}" --urgent --case "$CASE_HINT")
+          if [ "$OFFLINE" = "true" ]; then args+=(--offline); fi
+          uv run --no-sync acw make-short "${args[@]}"
+      - name: Budget / usage report
+        if: always()
+        run: uv run --no-sync acw budget || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: slice-${{ github.run_id }}
+          path: |
+            data/jobs/
+            data/state.db
+          retention-days: 14
