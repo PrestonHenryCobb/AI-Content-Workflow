@@ -49,10 +49,14 @@ if [ "$cmd" = "push" ]; then
   tmp=$(mktemp -d)
   mkdir -p "$tmp/data/jobs"
   cp data/state.db data/published_cases.json "$tmp/data/" 2>/dev/null || true
-  for job in $buffered; do
+  # keep JSON (+ stills, small PNGs) for buffered jobs and for anything from the last 8 days,
+  # which the Sunday compilation re-uses
+  recent=$(sqlite3 data/state.db "SELECT job_id FROM jobs WHERE status='done' AND updated_at >= datetime('now','-8 days')" 2>/dev/null || true)
+  for job in $(printf "%s\n%s\n" "$buffered" "$recent" | sort -u); do
     if [ -d "data/jobs/$job" ]; then
       mkdir -p "$tmp/data/jobs/$job"
       cp data/jobs/"$job"/*.json "$tmp/data/jobs/$job/" 2>/dev/null || true
+      if [ -d "data/jobs/$job/stills" ]; then cp -r "data/jobs/$job/stills" "$tmp/data/jobs/$job/"; fi
     fi
   done
   git -C "$tmp" init -q -b state

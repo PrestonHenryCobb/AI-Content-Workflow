@@ -81,7 +81,7 @@ def _clean(word: str) -> str:
     return word
 
 
-def draw_caption(img: Image.Image, chunk: Chunk, scale: int = 2) -> None:
+def draw_caption(img: Image.Image, chunk: Chunk, scale: int = 2, y_frac: float = 0.64) -> None:
     words = [_clean(w) for w in chunk.words if _clean(w)]
     if not words:
         return
@@ -92,14 +92,14 @@ def draw_caption(img: Image.Image, chunk: Chunk, scale: int = 2) -> None:
     if total > img.width - 24:                       # wrap to two lines
         scale = 1 if total > (img.width - 24) * 2 else scale
     x = (img.width - total) // 2
-    y = int(img.height * 0.64)
+    y = int(img.height * y_frac)
     for i, w in enumerate(words):
         t = render_text(w, scale, WARN if i == hi else BONE)
         img.paste(t, (max(4, x), y), t)
         x += widths[i] + space
 
 
-def hook_card(img: Image.Image, case_no: str, location: str, year: int) -> None:
+def hook_card(img: Image.Image, case_no: str, location: str, year: int | str) -> None:
     lines = [(case_no, 2, WARN), (location.upper()[:28], 1, BONE), (str(year), 2, SODIUM)]
     bw = max(text_size(t, s)[0] for t, s, _ in lines) + 28
     bh = sum(text_size(t, s)[1] for t, s, _ in lines) + 30
@@ -116,20 +116,22 @@ def hook_card(img: Image.Image, case_no: str, location: str, year: int) -> None:
 
 
 class ShotSource:
-    def __init__(self, shot: Shot, stills_dir: Path, seed: int, depth_model: str) -> None:
-        self.shot, self.seed = shot, seed
+    def __init__(self, shot: Shot, stills_dir: Path, seed: int, depth_model: str,
+                 size: tuple[int, int] = (IW, IH)) -> None:
+        self.shot, self.seed, self.size = shot, seed, size
         self.parallax: Parallax | None = None
         self.template = shot.template if shot.template != "none" else template_for_prompt(
             shot.prompt)
         still = stills_dir / f"{shot.id}.png"
         if shot.kind == "still" and still.exists():
             with Image.open(still) as im:
-                self.parallax = Parallax(im.convert("RGB"), (IW, IH), depth_model)
+                self.parallax = Parallax(im.convert("RGB"), size, depth_model)
 
     def frame(self, t: float, i: int) -> NDArray[np.uint8]:
         if self.parallax is not None:
             return self.parallax.frame(self.shot.move, t)
-        return np.asarray(render_frame(self.template, self.shot.move, t, i, IW, IH, self.seed))
+        w, h = self.size
+        return np.asarray(render_frame(self.template, self.shot.move, t, i, w, h, self.seed))
 
 
 def build_audio(narration: Path, total: float, out: Path) -> Path:
@@ -161,7 +163,8 @@ def build_audio(narration: Path, total: float, out: Path) -> Path:
     ffmpeg("-i", str(mix), "-af",
            f"loudnorm=I=-14:TP=-2.0:LRA=11:measured_I={j['input_i']}:measured_TP={j['input_tp']}"
            f":measured_LRA={j['input_lra']}:measured_thresh={j['input_thresh']}"
-           f":offset={j['target_offset']}:linear=true", "-ar", "48000", str(out))
+           f":offset={j['target_offset']}:linear=true,alimiter=limit=0.79:level=false",
+           "-ar", "48000", str(out))
     return out
 
 
@@ -169,6 +172,18 @@ def render_short(script: Script, timings: list[LineTiming], narration: Path, sti
                  out: Path, *, case_no: str, location: str, year: int,
                  style: dict[str, object], depth_model: str = "heuristic",
                  seed: int = 1) -> Path:
+    """9:16 short: 360x640 internal -> 1080x1920, captions, case card on the hook."""
+    return render_video(script, timings, narration, stills_dir, out, case_no=case_no,
+                        location=location, year=year, style=style, depth_model=depth_model,
+                        seed=seed)
+
+
+def render_video(script: Script, timings: list[LineTiming], narration: Path, stills_dir: Path,
+                 out: Path, *, case_no: str, location: str, year: int | str,
+                 style: dict[str, object], depth_model: str = "heuristic", seed: int = 1,
+                 size: tuple[int, int] = (IW, IH), fps: int = FPS, caption_y: float = 0.64,
+                 card_s: float = 2.4, stamp_on: bool = True) -> Path:
+    iw, ih = size
     total = duration(narration) + TAIL_S
     audio = build_audio(narration, total, out.with_name("mix.wav"))
     spans = spans_for(script, timings, total)
@@ -177,15 +192,15 @@ def render_short(script: Script, timings: list[LineTiming], narration: Path, sti
     pp = style.get("post_process", {})
     scan = float(pp.get("scanlines", 0.25)) if isinstance(pp, dict) else 0.25
     rng = np.random.default_rng(seed)
-    amb = Ambient(IW, IH, seed)
-    hook_end = min(2.4, timings[0].end)
-    n_frames = int(total * FPS)
-    sources = {s.shot.id: ShotSource(s.shot, stills_dir, seed + k, depth_model)
+    amb = Ambient(iw, ih, seed)
+    hook_end = min(card_s, timings[0].end) if card_s > 0 else 0.0
+    n_frames = int(total * fps)
+    sources = {s.shot.id: ShotSource(s.shot, stills_dir, seed + k, depth_model, size)
                for k, s in enumerate(spans)}
 
     cmd = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
-           "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{IW * FACTOR}x{IH * FACTOR}",
-           "-r", str(FPS), "-i", "-", "-i", str(audio),
+           "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{iw * FACTOR}x{ih * FACTOR}",
+           "-r", str(fps), "-i", "-", "-i", str(audio),
            "-vf", "rgbashift=rh=-3:bh=3,noise=alls=6:allf=t",
            "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p",
            "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", str(out)]
@@ -194,17 +209,17 @@ def render_short(script: Script, timings: list[LineTiming], narration: Path, sti
     si, ci = 0, 0
     try:
         for i in range(n_frames):
-            t = i / FPS
+            t = i / fps
             while si + 1 < len(spans) and t >= spans[si].end:
                 si += 1
             span = spans[si]
             local = (t - span.start) / max(1e-3, span.end - span.start)
             since_cut = t - span.start
-            if si > 0 and since_cut < 2 / FPS:
+            if si > 0 and since_cut < 2 / fps:
                 frame = amb.static()
             else:
                 frame = sources[span.shot.id].frame(min(1.0, local), i)
-                frame = amb.apply(frame, i, FPS, glitch=since_cut < 4 / FPS and si > 0)
+                frame = amb.apply(frame, i, fps, glitch=since_cut < 4 / fps and si > 0)
             frame = ps2_internal(frame, params, rng, wobble_phase=i * 0.15)
             img = Image.fromarray(frame)
             if t < hook_end:
@@ -212,8 +227,9 @@ def render_short(script: Script, timings: list[LineTiming], narration: Path, sti
             while ci + 1 < len(chunks) and t >= chunks[ci].end:
                 ci += 1
             if chunks and chunks[ci].start <= t < chunks[ci].end:
-                draw_caption(img, chunks[ci])
-            stamp(img, case_no, i, FPS)
+                draw_caption(img, chunks[ci], y_frac=caption_y)
+            if stamp_on:
+                stamp(img, case_no, i, fps)
             big = upscale_scanlines(np.asarray(img), FACTOR, scan)
             proc.stdin.write(big.tobytes())
         proc.stdin.close()

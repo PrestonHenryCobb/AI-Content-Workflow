@@ -3,7 +3,7 @@ shorts_per_day: 3
 slots: ["08:00", "14:00", "20:00"]
 compilation:
   day: sunday
-  time: "11:00"
+  time: "12:00"
 buffer:
   target: 4
   minimum_before_alert: 2

@@ -99,6 +99,21 @@
   repo variable `PIPELINE_ENABLED=true`; manual runs default to dry-run. Healthcheck is
   every 4 h, not hourly, to save Actions minutes.
 
+- **D30. Weekly compilation:** best 3–8 QA-passed shorts of the week (by quality score),
+  each expanded into a 2–3 min chapter (280–500 words) by Sonnet and re-fact-checked by Opus;
+  if expansion fails lint or the fact check twice, that chapter falls back to the short's own
+  script, so the compilation still ships. Cold open = the 3 strongest hooks (already
+  fact-checked); outro has no factual claims. Rendered 1920x1080 at 24 fps (fewer frames
+  to render) with no new image spend (scene templates + the shorts' stills). Built Sunday
+  00:11 EST / 01:11 EDT, scheduled public Sunday 12:00 ET. Costs about 9–25 Claude calls a week.
+- **D31. Compilation length:** hard minimum 3 min (so a thin week still ships), max 40.
+  `midroll_eligible` (≥ 8 min) is recorded in compilation_meta.json; a normal week with
+  6–8 expanded chapters runs about 14–22 min.
+- **D32. Audio mastering:** loudnorm two-pass to -14 LUFS, then a -2 dBFS limiter because
+  AAC encoding overshoots true peak. Check range: -16.5 to -12.5 LUFS, true peak ≤ -1 dBTP.
+  (YouTube only turns loud videos down, so slightly quiet is harmless.) Re-verify on the
+  first live Kokoro run.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.

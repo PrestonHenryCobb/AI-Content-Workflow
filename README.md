@@ -16,7 +16,7 @@ session starts from it.
 - [x] Phase 3: vertical slice (one case → finished video) — offline verified; live run via Actions → slice
 - [x] Phase 4: YouTube publisher + buffer (dry-run verified; live needs YouTube secrets)
 - [x] Phase 5: GitHub Actions automation (nightly, healthcheck, weekly), state persistence, alerts, digest
-- [ ] Phase 6: weekly compilation
+- [x] Phase 6: weekly long-form compilation (offline-verified: 1920x1080/24fps, chapters, thumbnail)
 - [ ] Phase 7: analytics + learning loop
 - [ ] Phase 8: TikTok / Instagram cross-posting
 - [ ] Phase 9: growth extras

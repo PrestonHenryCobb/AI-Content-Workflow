@@ -131,6 +131,50 @@ def cmd_digest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_weekly(args: argparse.Namespace) -> int:
+    import logging
+    from datetime import UTC, datetime
+
+    from pipeline import alerts, digest
+    from pipeline.budget import Governor
+    from pipeline.jobs import Job
+    from pipeline.llm import LLM, Completer
+    from pipeline.offline import OfflineLLM
+    from pipeline.stages import compilation
+    from pipeline.youtube import Credentials, YouTube
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    settings, state = load_settings(), State()
+    gov = Governor(state, settings)
+    llm: Completer = OfflineLLM(gov) if args.offline else LLM(gov)
+    now = datetime.now(UTC)
+    week_job = Job(f"weekly-{now.date().isoformat()}")
+    try:
+        video, meta = compilation.build(llm, state, settings, week_job, now=now,
+                                        offline=args.offline,
+                                        reuse=True if args.offline else None)
+    except RuntimeError as e:
+        print(f"no compilation this week: {e}")
+        alerts.notify("Weekly compilation skipped", str(e))
+        return 0
+    report = compilation.qa_compilation(llm, video, week_job)
+    for c in report.checks:
+        print(f"{'PASS' if c.passed else 'FAIL'}  {c.name:14} {c.detail}")
+    if not report.passed:
+        alerts.notify("Weekly compilation failed QA",
+                      "\n".join(f"- {c.name}: {c.detail}" for c in report.checks if not c.passed))
+        return 2
+    live = not args.dry_run and pipeline_enabled()
+    yt = YouTube(Credentials.from_env(), gov) if live else None
+    slot = compilation.publish_slot(now.astimezone().date(), settings)
+    res = compilation.publish(video, meta, week_job, settings, slot, live=live, yt=yt)
+    print(json.dumps({k: v for k, v in res.items() if k != "snippet"}, indent=2, default=str))
+    if args.post_digest:
+        alerts.notify(f"Weekly digest: {now.date().isoformat()}", digest.build(state, settings),
+                      label="digest")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="acw", description="AI-Content-Workflow pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -161,6 +205,11 @@ def main(argv: list[str] | None = None) -> int:
     h = sub.add_parser("healthcheck", help="fill open slots in the next 12 h from the buffer")
     h.add_argument("--dry-run", action="store_true")
     h.set_defaults(fn=cmd_healthcheck)
+    w = sub.add_parser("weekly", help="build, check and schedule the Sunday compilation")
+    w.add_argument("--offline", action="store_true")
+    w.add_argument("--dry-run", action="store_true")
+    w.add_argument("--post-digest", action="store_true")
+    w.set_defaults(fn=cmd_weekly)
     dg = sub.add_parser("digest", help="weekly owner digest")
     dg.add_argument("--post", action="store_true", help="open it as a GitHub issue")
     dg.set_defaults(fn=cmd_digest)

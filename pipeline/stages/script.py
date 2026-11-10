@@ -15,14 +15,15 @@ def word_count(script: Script) -> int:
     return sum(len(line.text.split()) for line in script.lines)
 
 
-def lint(script: Script, pack: FactPack) -> list[str]:
+def lint(script: Script, pack: FactPack, min_words: int = MIN_WORDS,
+         max_words: int = MAX_WORDS) -> list[str]:
     """Structural problems the writer must fix. Empty list = OK."""
     problems: list[str] = []
     ids = {c.id for c in pack.claims}
     shots = {s.id for s in script.shots}
     wc = word_count(script)
-    if not MIN_WORDS <= wc <= MAX_WORDS:
-        problems.append(f"script is {wc} words; must be {MIN_WORDS}-{MAX_WORDS}")
+    if not min_words <= wc <= max_words:
+        problems.append(f"script is {wc} words; must be {min_words}-{max_words}")
     if script.lines[0].text.strip() != script.hook.strip():
         problems.append("hook must equal the first line")
     for i, line in enumerate(script.lines):

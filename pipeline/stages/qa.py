@@ -50,25 +50,28 @@ def policy_gate(llm: Completer, pack: FactPack, script: Script, *, job_id: str |
             v.fix_instructions or "; ".join(v.violations))
 
 
-def technical_checks(video: Path, narration: Path) -> list[Check]:
+def technical_checks(video: Path, narration: Path | None, *, size: tuple[int, int] = (1080, 1920),
+                     fps: str = "30/1", min_s: float = 40, max_s: float = 80) -> list[Check]:
     info = probe(video)
     v = next((s for s in info["streams"] if s["codec_type"] == "video"), None)
     a = next((s for s in info["streams"] if s["codec_type"] == "audio"), None)
     dur = duration(video)
     checks = [
-        Check(name="duration", passed=40 <= dur <= 80, detail=f"{dur:.1f}s (40–80)"),
-        Check(name="resolution", passed=bool(v and v["width"] == 1080 and v["height"] == 1920),
+        Check(name="duration", passed=min_s <= dur <= max_s,
+              detail=f"{dur:.1f}s ({min_s:.0f}–{max_s:.0f})"),
+        Check(name="resolution", passed=bool(v and (v["width"], v["height"]) == size),
               detail=f"{v and v['width']}x{v and v['height']}"),
-        Check(name="fps", passed=bool(v and v.get("r_frame_rate") == "30/1"),
+        Check(name="fps", passed=bool(v and v.get("r_frame_rate") == fps),
               detail=str(v and v.get("r_frame_rate"))),
         Check(name="audio_stream", passed=a is not None, detail=str(a and a["codec_name"])),
     ]
     lufs, peak = loudness(video)
-    checks.append(Check(name="loudness", passed=-15.5 <= lufs <= -12.5 and peak <= -1.0,
+    checks.append(Check(name="loudness", passed=-16.5 <= lufs <= -12.5 and peak <= -1.0,
                         detail=f"{lufs:.1f} LUFS, peak {peak:.1f} dBFS"))
-    gaps = silences(narration, 1.5)
-    gaps = [g for g in gaps if g[0] > 0.1]             # ignore leading silence
-    checks.append(Check(name="silent_gaps", passed=not gaps, detail=f"{len(gaps)} gaps > 1.5s"))
+    if narration is not None:
+        gaps = [g for g in silences(narration, 1.5) if g[0] > 0.1]   # ignore leading silence
+        checks.append(Check(name="silent_gaps", passed=not gaps,
+                            detail=f"{len(gaps)} gaps > 1.5s"))
     return checks
 
 
