@@ -16,13 +16,17 @@ click-paths as each integration is built.
 | 6 | Request a YouTube quota increase (default 10,000 units/day ≈ 6 uploads) | 4 | ☐ |
 | 7 | On your own computer: install Claude Code, run `claude setup-token` (uses your Pro plan), save the token as GitHub secret `CLAUDE_CODE_OAUTH_TOKEN`. Do **not** add an `ANTHROPIC_API_KEY` secret | 3 | ☐ |
 | 8 | fal.ai API key for Flux Schnell stills → GitHub secret `FAL_KEY` (optional: without it stills are procedural) | 3 | ☐ |
-| 9 | Cloud bucket (Cloudflare R2 free tier recommended) + access keys | 5 | ☐ |
-| 10 | Discord (or Slack) webhook URL for alerts | 5 | ☐ |
+| 9 | ~~Cloud bucket~~ not needed: state lives on a `state` branch and a `buffer` release (DECISIONS D27) | 5 | ☑ |
+| 10 | Alerts arrive as GitHub issues (emailed to you automatically). Optional: Discord/Slack webhook as secret `ALERT_WEBHOOK_URL` | 5 | ☐ |
 | 11 | Pick the channel name from the shortlist in `brand/name_shortlist.md` | 2 | ☑ Cold Save |
 | 12 | TikTok developer app + Content Posting API audit | 8 | ☐ |
 | 13 | Instagram Business account linked to a Facebook Page + Meta app | 8 | ☐ |
 | 14 | Add every key from `.env.example` to GitHub → Settings → Secrets and variables → Actions | 5 | ☐ |
-| 15 | Set repo **variable** `PIPELINE_ENABLED=true` | 5 | ☐ |
+| 15 | When steps 1–8 are done: Settings → Secrets and variables → Actions → **Variables** → New: `PIPELINE_ENABLED` = `true`. This turns on the nightly, healthcheck and weekly schedules and real uploads | 5 | ☐ |
+| 16 | Recommended first: Actions → **nightly** → Run workflow with *dry run* checked, and look at the result before step 15 | 5 | ☐ |
 
-**GitHub Actions minutes:** a private repo gets 2,000 free minutes/month; Blender renders may
-exceed that. A public repo has unlimited minutes (secrets stay secret either way).
+**GitHub Actions minutes:** a private repo gets 2,000 free minutes/month. Estimated use:
+nightly ~40–70 min × 30 + healthcheck ~2 min × 180 + weekly ≈ **1,600–2,500 min/month**, which
+may go over. Options: make the repo public (unlimited minutes; secrets stay secret, and
+the code contains nothing private), or set `shorts_per_day: 2`. The weekly digest will
+show if you're close.

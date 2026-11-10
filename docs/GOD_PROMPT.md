@@ -323,15 +323,16 @@ Resets midnight Pacific. Tracked in the governor. Request an increase early.
   - Move rendering to a cheap GPU/VM runner only if Actions minutes/time limits bite.
     Note: private repos get 2,000 free Actions minutes/month; Blender renders can eat that.
     Mitigations: public repo (unlimited minutes), clip-library reuse, 480p renders.
-- Storage: rendered media → cloud bucket (R2/S3/GCS) with 30-day lifecycle; DB + metadata
-  committed or synced to bucket. Never commit large media to git.
+- Storage (DECISIONS D27): DB + small JSON on an orphan `state` branch; buffered videos as
+  assets on a `buffer` GitHub Release, deleted once used. No cloud bucket. Never commit
+  media to the main branch.
 - Secrets: GitHub Actions secrets only (`CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`;
   **never** `ANTHROPIC_API_KEY`), `ELEVENLABS_API_KEY` (optional),
   `YOUTUBE_CLIENT_ID/SECRET/REFRESH_TOKEN`, `TIKTOK_*`, `META_*`, image/video provider keys,
   bucket creds). `.env.example` documents them; `.env` is git-ignored.
-- Alerts: email/Discord webhook on (a) slot missed, (b) buffer < 2, (c) budget > 90%,
+- Alerts: GitHub issues (emailed by GitHub; optional Discord/Slack webhook) on (a) slot missed, (b) buffer < 2, (c) budget > 90%,
   (d) any strike/claim/policy notice, (e) auth token expiring.
-- **Owner digest** (weekly email): videos published, top/bottom performers, spend vs.
+- **Owner digest** (weekly GitHub issue, emailed by GitHub): videos published, top/bottom performers, spend vs.
   budget, subs, anything that needs a human (≤5 bullet points).
 
 ---

@@ -97,6 +97,40 @@ def cmd_publish(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_nightly(args: argparse.Namespace) -> int:
+    import logging
+
+    from pipeline.nightly import run_night
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    rep = run_night(offline=args.offline, live=not args.dry_run, max_jobs=args.max_jobs)
+    print(f"produced: {rep.produced}\nfailed: {rep.failed}\nstopped_by: {rep.stopped_by}")
+    for o in rep.published:
+        print(f"{o.slot.isoformat()}  {o.status:9} {o.job_id or '-'} {o.video_id or ''}")
+    return 0
+
+
+def cmd_healthcheck(args: argparse.Namespace) -> int:
+    from pipeline.nightly import healthcheck
+
+    for o in healthcheck(live=not args.dry_run):
+        print(f"{o.slot.isoformat()}  {o.status:9} {o.job_id or '-'} {o.video_id or ''}")
+    return 0
+
+
+def cmd_digest(args: argparse.Namespace) -> int:
+    from pipeline import alerts, digest
+
+    body = digest.build(State(), load_settings())
+    if args.post:
+        from datetime import date
+
+        alerts.notify(f"Weekly digest: {date.today().isoformat()}", body, label="digest")
+    else:
+        print(body)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="acw", description="AI-Content-Workflow pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -119,6 +153,17 @@ def main(argv: list[str] | None = None) -> int:
     pub.add_argument("--live", action="store_true",
                      help="really upload (also requires PIPELINE_ENABLED=true)")
     pub.set_defaults(fn=cmd_publish)
+    n = sub.add_parser("nightly", help="produce tonight's shorts, refill buffer, schedule")
+    n.add_argument("--offline", action="store_true")
+    n.add_argument("--dry-run", action="store_true", help="never upload")
+    n.add_argument("--max-jobs", type=int, default=None)
+    n.set_defaults(fn=cmd_nightly)
+    h = sub.add_parser("healthcheck", help="fill open slots in the next 12 h from the buffer")
+    h.add_argument("--dry-run", action="store_true")
+    h.set_defaults(fn=cmd_healthcheck)
+    dg = sub.add_parser("digest", help="weekly owner digest")
+    dg.add_argument("--post", action="store_true", help="open it as a GitHub issue")
+    dg.set_defaults(fn=cmd_digest)
     args = p.parse_args(argv)
     return int(args.fn(args))
 

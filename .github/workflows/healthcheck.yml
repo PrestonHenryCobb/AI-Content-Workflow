@@ -1,0 +1,32 @@
+# Every 4 hours: if a slot in the next 12 h has no scheduled video, fill it from the buffer.
+name: healthcheck
+on:
+  schedule:
+    - cron: "43 */4 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: pipeline-state
+  cancel-in-progress: false
+jobs:
+  check:
+    if: vars.PIPELINE_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PIPELINE_ENABLED: ${{ vars.PIPELINE_ENABLED }}
+      YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+      YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+      ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: scripts/state.sh pull
+      - run: uv run --no-sync acw healthcheck
+      - if: always()
+        run: scripts/state.sh push

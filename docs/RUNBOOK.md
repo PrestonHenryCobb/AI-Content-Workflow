@@ -1,8 +1,20 @@
 # Runbook
 
+## Schedules (when PIPELINE_ENABLED=true)
+| Workflow | When | Does |
+|---|---|---|
+| nightly | 01:17 ET daily | restore state → make shorts (today's slots + refill buffer to 4) → schedule today's slots → save state |
+| healthcheck | every 4 h | fill any open slot in the next 12 h from the buffer; alert if none |
+| weekly | Sun ~11:41 ET | post the weekly digest issue |
+| ci | every push | lint, types, tests, render the fictional test short |
+
+State: `state` branch (DB + JSON) and `buffer` release (spare videos). Don't edit either by
+hand; delete both to reset the pipeline completely.
+
 ## Kill switch
-Set repo variable `PIPELINE_ENABLED=false`. Publishing stops at the next run; nothing else
-is needed. Local check: `uv run acw status`.
+Set repo variable `PIPELINE_ENABLED=false` (or delete it). Scheduled runs stop and nothing
+is uploaded; nothing else is needed. Already-scheduled videos still go public at their slot:
+set them to private in YouTube Studio if you need to stop those too. Local check: `uv run acw status`.
 
 ## Commands
 | Command | What it shows |
@@ -15,6 +27,9 @@ is needed. Local check: `uv run acw status`.
 
 | `uv run acw publish [--date YYYY-MM-DD]` | dry run: shows which buffered video goes in which slot, writes publish_plan.json |
 | `uv run acw publish --live` | uploads for real (also needs PIPELINE_ENABLED=true and YOUTUBE_* secrets) |
+| `uv run acw nightly [--dry-run] [--max-jobs N]` | what the nightly workflow runs |
+| `uv run acw healthcheck [--dry-run]` | what the healthcheck workflow runs |
+| `uv run acw digest [--post]` | print (or post as an issue) the weekly digest |
 | `uv run python scripts/setup_channel.py [--apply]` | apply name/description/keywords/banner/playlists to the channel |
 
 ## Uploads stay private?

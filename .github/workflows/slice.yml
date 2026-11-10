@@ -27,11 +27,6 @@ jobs:
       DISABLE_AUTOUPDATER: "1"
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.12"
-      - name: System packages
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg espeak-ng
       - name: Check secrets
         if: ${{ !inputs.offline }}
         run: |
@@ -39,16 +34,9 @@ jobs:
             echo "::error::CLAUDE_CODE_OAUTH_TOKEN secret is missing (run 'claude setup-token' locally, SETUP step 7)"; exit 1
           fi
           if [ -z "$FAL_KEY" ]; then echo "::warning::FAL_KEY not set: stills will be procedural"; fi
-      - name: Claude Code CLI
-        if: ${{ !inputs.offline }}
-        run: npm install -g @anthropic-ai/claude-code && claude --version
-      - name: Python deps
-        run: uv sync --locked
-      - name: Media deps (CPU torch, Kokoro TTS, faster-whisper)
-        if: ${{ !inputs.offline }}
-        run: |
-          uv pip install --index-url https://download.pytorch.org/whl/cpu torch
-          uv pip install "kokoro==0.9.4" "soundfile>=0.12" "faster-whisper>=1.1,<2"
+      - uses: ./.github/actions/setup
+        with:
+          media: ${{ !inputs.offline }}
       - name: Make short
         env:
           CASE_HINT: ${{ inputs.case_hint }}
@@ -59,7 +47,8 @@ jobs:
           uv run --no-sync acw make-short "${args[@]}"
       - name: Budget / usage report
         if: always()
-        run: if [ -x .venv/bin/acw ]; then uv run --no-sync acw budget; else echo "skipped: run stopped before setup"; fi
+        run: |
+          if [ -x .venv/bin/acw ]; then uv run --no-sync acw budget; else echo "skipped (run stopped before setup)"; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

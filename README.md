@@ -15,7 +15,7 @@ session starts from it.
 - [x] Phase 2: brand package (Cold Save)
 - [x] Phase 3: vertical slice (one case → finished video) — offline verified; live run via Actions → slice
 - [x] Phase 4: YouTube publisher + buffer (dry-run verified; live needs YouTube secrets)
-- [ ] Phase 5: GitHub Actions automation, alerts, weekly digest
+- [x] Phase 5: GitHub Actions automation (nightly, healthcheck, weekly), state persistence, alerts, digest
 - [ ] Phase 6: weekly compilation
 - [ ] Phase 7: analytics + learning loop
 - [ ] Phase 8: TikTok / Instagram cross-posting

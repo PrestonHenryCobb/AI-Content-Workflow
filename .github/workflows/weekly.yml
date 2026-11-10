@@ -1,0 +1,27 @@
+# Sunday: weekly owner digest (as a GitHub issue, which GitHub emails to you).
+# Phase 6 adds the long-form compilation here; Phase 7 adds the learning loop.
+name: weekly
+on:
+  schedule:
+    - cron: "41 16 * * 0"     # Sun 11:41 EST / 12:41 EDT
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: pipeline-state
+  cancel-in-progress: false
+jobs:
+  weekly:
+    if: vars.PIPELINE_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+      ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: scripts/state.sh pull
+      - run: uv run --no-sync acw digest --post

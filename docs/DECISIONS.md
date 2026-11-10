@@ -86,13 +86,24 @@
   SDK: fewer dependencies, injectable transport, fully mock-tested, and every call is
   charged to the quota governor before it's made.
 
+- **D27. State persists in GitHub itself, no cloud bucket:** `scripts/state.sh` saves the
+  SQLite DB, published list and buffered jobs' JSON to an orphan `state` branch (one
+  force-pushed commit, so no history bloat) and buffered videos to a `buffer` GitHub
+  Release (assets deleted once used). This removes SETUP's bucket step. All scheduled
+  workflows share one concurrency group, so they never race on state.
+- **D28. Alerts and the weekly digest are GitHub issues** (labels `alert` / `digest`), which
+  GitHub emails to the owner. Repeat alerts comment on the open issue instead of opening
+  new ones. A Discord/Slack webhook (`ALERT_WEBHOOK_URL`) is optional.
+- **D29. Schedules:** nightly 06:17 UTC (01:17 EST / 02:17 EDT, inside the Claude window),
+  healthcheck every 4 h at :43, weekly Sunday 16:41 UTC. Scheduled runs do nothing unless
+  repo variable `PIPELINE_ENABLED=true`; manual runs default to dry-run. Healthcheck is
+  every 4 h, not hourly, to save Actions minutes.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.
 
 ## Known risks
-- **Governor state lives in `data/state.db`, which is ephemeral on Actions runners.** Until
-  Phase 5 persists it (bucket or a state branch), caps only apply within a single run.
 - **Pro plan limits are the tightest tier and are shared with the owner's own Claude use.**
   Mitigated by the overnight window, adaptive caps and the buffer. If the owner often hits
   limits themselves, options are: Max plan, 2 shorts/day, or opting into the API backend.
