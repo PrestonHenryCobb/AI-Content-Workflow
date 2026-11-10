@@ -38,6 +38,7 @@ class CaseCandidate(_M):
     sources: list[str] = Field(min_length=1)
     scores: CaseScores
     risk_notes: str
+    requested: bool = Field(default=False, description="leave false; set by the pipeline")
 
 
 class Candidates(_M):
@@ -166,3 +167,13 @@ class WeeklyPlan(_M):
     insights: list[str] = Field(max_length=6)
     case_mix: CaseMix
     writer_notes: list[str] = Field(max_length=5)
+
+
+# ---------- Phase 9: growth ----------
+class CaseRequest(_M):
+    case_name: str = Field(max_length=80)
+    mentions: int = Field(ge=1)
+
+
+class CaseRequests(_M):
+    requests: list[CaseRequest] = Field(max_length=10)

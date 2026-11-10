@@ -44,7 +44,11 @@ def discover(llm: Completer, state: State, *, count: int = 8, hint: str = "",
              job_id: str | None = None, urgent: bool = False) -> list[CaseCandidate]:
     known = published_titles() + [r[0] for r in state.conn.execute(
         "SELECT title FROM cases").fetchall()]
+    from pipeline import growth
     from pipeline.analytics import current_mix
+
+    extra = [h for h in (hint and f"Focus: {hint}", growth.discovery_hint(state),
+                         growth.request_hint(state)) if h]
 
     mix = current_mix(state, llm.settings)
     mix_text = ", ".join(f"~{round(v * 100)}% {k.replace('_', ' ')}" for k, v in mix.items())
@@ -52,12 +56,14 @@ def discover(llm: Completer, state: State, *, count: int = 8, hint: str = "",
         "discover", count=count, mix=mix_text,
         min_age=llm.settings.sources.get("min_case_age_years", 10),
         avoid="none", published="; ".join(known[-200:]) or "none",
-        hint=f"Focus: {hint}" if hint else "",
+        hint="\n".join(extra),
     )
     res = llm.complete("discover", prompt, json_schema=Candidates.json_schema(),
                        job_id=job_id, urgent=urgent)
     found = Candidates.model_validate(res.data).candidates
-    kept = [c for c in found if eligible(c, llm.settings) and not is_duplicate(c, known)]
+    names = growth.requested_names(state)
+    kept = [c.model_copy(update={"requested": growth.is_requested(c, names)})
+            for c in found if eligible(c, llm.settings) and not is_duplicate(c, known)]
     with state.tx() as conn:
         for c in kept:
             conn.execute(

@@ -1,0 +1,14 @@
+# Phase 9 growth extras. Each can be turned off independently.
+requested_cases:
+  enabled: true          # mine YouTube comments weekly for case requests
+  lookback_days: 14
+  max_comments: 300
+segments:
+  enabled: true          # recurring segment name on each short's case card
+  names:
+    unsolved: STILL MISSING
+    solved_with_twist: SOLVED, DECADES LATER
+    strange_but_true: STRANGE BUT TRUE
+dna_focus:
+  enabled: true          # every Nth discovery focuses on recent DNA identifications
+  every_n: 5

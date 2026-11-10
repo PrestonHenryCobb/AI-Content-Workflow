@@ -152,10 +152,14 @@ def build_plan(job: Job, slot: datetime, settings: Settings, case_no: str) -> Pl
     while sum(len(t) + 1 for t in tags) > 480:          # YouTube tag budget is 500 chars
         tags.pop()
     playlists = [CATEGORY_PLAYLIST[case.category], f"By Decade: {pack.year // 10 * 10}s"]
+    comment = f"{case_no}: {sc.pinned_comment}"
+    if case.requested:
+        playlists.append("Requested Cases")
+        comment = f"{case_no}: You asked for this one. {sc.pinned_comment}"
     return Plan(job_id=job.id, slot=slot, title=sc.titles[0][:100], description=desc[:4900],
                 tags=tags, category_id=str(settings.strategy.get("category_id", 24)),
                 playlists=playlists,
-                pinned_comment=f"{case_no}: {sc.pinned_comment}"[:1000])
+                pinned_comment=comment[:1000])
 
 
 def _record_published(case_id: str, title: str, video_id: str | None, slot: datetime) -> None:

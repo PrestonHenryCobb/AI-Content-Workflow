@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any, cast
 
+from pipeline import growth
 from pipeline.budget import Governor
 from pipeline.config import Settings, load_settings
 from pipeline.jobs import Job
@@ -146,7 +147,7 @@ def make_short(job_id: str, *, case_hint: str = "", offline: bool = False,
         mark(Stage.RENDER, JobStatus.RUNNING, case_id=case.case_id)
         render.render_short(sc, timings, job.path("narration.wav"), job.path("stills"), video,
                             case_no=case_no, location=pack.location, year=pack.year,
-                            style=settings.style,
+                            style=settings.style, segment=growth.segment_for(case.category),
                             depth_model=str(settings.animation.parallax.get("depth_model_runtime",
                                                                              "heuristic")))
 

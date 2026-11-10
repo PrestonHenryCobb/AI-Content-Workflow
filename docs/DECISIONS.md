@@ -136,6 +136,17 @@
   Not verifiable without accounts: TikTok refresh-token rotation (we alert if it rotates,
   since workflows can't update secrets) and the exact Graph API version. Check both on first use.
 
+- **D35. Growth extras built** (config/growth.yaml, each switchable):
+  (1) **Viewer-requested cases:** weekly, top comments on the last 14 days of videos → Haiku
+  extracts case names → sanitized (plain text, ≤ 60 chars) → passed to discovery as quoted
+  *data*, not instructions; requested cases still pass every gate, then get the "Requested
+  Cases" playlist and a "You asked for this one" comment. (2) **Recurring segments** on the
+  case card (STILL MISSING / SOLVED, DECADES LATER / STRANGE BUT TRUE). (3) **DNA-identification
+  focus** on every 5th discovery.
+- **D36. Growth extras not built:** multi-language dubs (YouTube's API can't add audio tracks,
+  so it needs separate channels: owner decision), thumbnail A/B (Test & Compare isn't in the
+  API), archivist storyline and Patreon/newsletter (wait for an audience).
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.

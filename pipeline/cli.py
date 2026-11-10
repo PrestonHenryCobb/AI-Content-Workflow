@@ -203,6 +203,15 @@ def cmd_learn(args: argparse.Namespace) -> int:
     publish.init(state)
     gov = Governor(state, settings)
     llm: Completer = OfflineLLM(gov) if args.offline else LLM(gov)
+    if not args.offline:
+        from pipeline import growth
+        from pipeline.youtube import Credentials, YouTube
+
+        try:
+            yt = YouTube(Credentials.from_env(), gov)
+            print(f"viewer requests: {growth.mine_requests(yt, llm, state)}")
+        except RuntimeError as e:
+            print(f"comment mining skipped: {e}")
     plan = analytics.plan_week(llm, state, settings)
     print("not enough data yet (need 6 videos with stats)" if plan is None else
           json.dumps(analytics.summary(state), indent=2))

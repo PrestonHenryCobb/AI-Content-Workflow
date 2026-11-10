@@ -337,7 +337,7 @@ Resets midnight Pacific. Tracked in the governor. Request an increase early.
 
 ---
 
-## 7. GROWTH EXTRAS (implement in phases; grill each before building)
+## 7. GROWTH EXTRAS (implement in phases; grill each before building; status in DECISIONS D35–D36)
 
 1. **Series hooks**: "Case #0417" numbering + recurring segment names ("Last Seen",
    "Wrong Man", "The Tape") to build binge behavior.

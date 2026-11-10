@@ -19,7 +19,7 @@ session starts from it.
 - [x] Phase 6: weekly long-form compilation (offline-verified: 1920x1080/24fps, chapters, thumbnail)
 - [x] Phase 7: analytics + learning loop (hook/CTA bandits, weekly planner)
 - [x] Phase 8: TikTok / Instagram cross-posting (built + mock-tested; off until accounts exist)
-- [ ] Phase 9: growth extras
+- [x] Phase 9: growth extras (viewer-requested cases, recurring segments, DNA-ID focus)
 
 Decisions and open questions are logged in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 

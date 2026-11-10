@@ -99,8 +99,11 @@ def draw_caption(img: Image.Image, chunk: Chunk, scale: int = 2, y_frac: float =
         x += widths[i] + space
 
 
-def hook_card(img: Image.Image, case_no: str, location: str, year: int | str) -> None:
+def hook_card(img: Image.Image, case_no: str, location: str, year: int | str,
+              segment: str = "") -> None:
     lines = [(case_no, 2, WARN), (location.upper()[:28], 1, BONE), (str(year), 2, SODIUM)]
+    if segment:
+        lines.insert(0, (segment.upper()[:24], 1, SICKLY))
     bw = max(text_size(t, s)[0] for t, s, _ in lines) + 28
     bh = sum(text_size(t, s)[1] for t, s, _ in lines) + 30
     x0, y0 = (img.width - bw) // 2, int(img.height * 0.22)
@@ -197,18 +200,18 @@ def enforce_true_peak(video: Path, ceiling: float = -1.2, max_passes: int = 4) -
 def render_short(script: Script, timings: list[LineTiming], narration: Path, stills_dir: Path,
                  out: Path, *, case_no: str, location: str, year: int,
                  style: dict[str, object], depth_model: str = "heuristic",
-                 seed: int = 1) -> Path:
+                 seed: int = 1, segment: str = "") -> Path:
     """9:16 short: 360x640 internal -> 1080x1920, captions, case card on the hook."""
     return render_video(script, timings, narration, stills_dir, out, case_no=case_no,
                         location=location, year=year, style=style, depth_model=depth_model,
-                        seed=seed)
+                        seed=seed, segment=segment)
 
 
 def render_video(script: Script, timings: list[LineTiming], narration: Path, stills_dir: Path,
                  out: Path, *, case_no: str, location: str, year: int | str,
                  style: dict[str, object], depth_model: str = "heuristic", seed: int = 1,
                  size: tuple[int, int] = (IW, IH), fps: int = FPS, caption_y: float = 0.64,
-                 card_s: float = 2.4, stamp_on: bool = True) -> Path:
+                 card_s: float = 2.4, stamp_on: bool = True, segment: str = "") -> Path:
     iw, ih = size
     total = duration(narration) + TAIL_S
     audio = build_audio(narration, total, out.with_name("mix.wav"))
@@ -249,7 +252,7 @@ def render_video(script: Script, timings: list[LineTiming], narration: Path, sti
             frame = ps2_internal(frame, params, rng, wobble_phase=i * 0.15)
             img = Image.fromarray(frame)
             if t < hook_end:
-                hook_card(img, case_no, location, year)
+                hook_card(img, case_no, location, year, segment)
             while ci + 1 < len(chunks) and t >= chunks[ci].end:
                 ci += 1
             if chunks and chunks[ci].start <= t < chunks[ci].end:
