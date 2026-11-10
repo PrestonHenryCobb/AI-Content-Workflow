@@ -14,7 +14,7 @@ session starts from it.
 - [x] Phase 1: skeleton, config, state DB, budget governor, CI
 - [x] Phase 2: brand package (Cold Save)
 - [x] Phase 3: vertical slice (one case → finished video) — offline verified; live run via Actions → slice
-- [ ] Phase 4: YouTube publisher + buffer
+- [x] Phase 4: YouTube publisher + buffer (dry-run verified; live needs YouTube secrets)
 - [ ] Phase 5: GitHub Actions automation, alerts, weekly digest
 - [ ] Phase 6: weekly compilation
 - [ ] Phase 7: analytics + learning loop

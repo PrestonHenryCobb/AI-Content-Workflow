@@ -71,6 +71,21 @@
   sites, Hugging Face (Kokoro weights) and fal.ai. Media deps (CPU torch, Kokoro,
   faster-whisper) install in the workflow and stay out of `uv.lock`.
 
+- **D23. Publishing = upload ahead as private + `publishAt`** (DECISIONS-safe scheduling):
+  each video goes public at its slot even if no job is running then. Every upload sets
+  `containsSyntheticMedia: true` (YouTube's altered/synthetic content disclosure) and
+  `selfDeclaredMadeForKids: false`. Live upload requires both `--live` and
+  `PIPELINE_ENABLED=true`; otherwise a `publish_plan.json` is written.
+- **D24. API limits accepted:** the YouTube API can't pin comments, set the profile picture,
+  or (without multipart upload) set the watermark. The channel comment is posted unpinned;
+  profile picture and watermark are one-time manual steps (SETUP 1b).
+- **D25. Slot filling:** the freshest QA-passed video from the last 24 h goes first;
+  otherwise the oldest buffered one, so the reserve never goes stale. A failed upload stays
+  in the buffer and the other slots continue.
+- **D26. YouTube client is stdlib HTTP** (resumable upload, token refresh), not the Google
+  SDK: fewer dependencies, injectable transport, fully mock-tested, and every call is
+  charged to the quota governor before it's made.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.

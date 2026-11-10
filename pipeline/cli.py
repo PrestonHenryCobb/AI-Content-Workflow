@@ -76,6 +76,27 @@ def cmd_make_short(args: argparse.Namespace) -> int:
     return 0 if res.report.passed else 2
 
 
+def cmd_publish(args: argparse.Namespace) -> int:
+    from datetime import date
+
+    from pipeline.budget import Governor
+    from pipeline.stages.publish import publish_day
+    from pipeline.youtube import Credentials, YouTube
+
+    settings = load_settings()
+    state = State()
+    day = date.fromisoformat(args.date) if args.date else date.today()
+    live = args.live and pipeline_enabled()
+    if args.live and not live:
+        print("PIPELINE_ENABLED is not true: doing a dry run instead")
+    yt = YouTube(Credentials.from_env(), Governor(state, settings)) if live else None
+    for o in publish_day(state, settings, day, live=live, yt=yt):
+        print(f"{o.slot.isoformat()}  {o.status:9} {o.job_id or '-':24} {o.video_id or ''} "
+              f"{o.detail}")
+    state.close()
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="acw", description="AI-Content-Workflow pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -93,6 +114,11 @@ def main(argv: list[str] | None = None) -> int:
     m.add_argument("--urgent", action="store_true",
                    help="allow Claude calls outside the overnight window")
     m.set_defaults(fn=cmd_make_short)
+    pub = sub.add_parser("publish", help="schedule buffered shorts into today's slots")
+    pub.add_argument("--date", default="", help="YYYY-MM-DD (default: today)")
+    pub.add_argument("--live", action="store_true",
+                     help="really upload (also requires PIPELINE_ENABLED=true)")
+    pub.set_defaults(fn=cmd_publish)
     args = p.parse_args(argv)
     return int(args.fn(args))
 

@@ -13,6 +13,15 @@ is needed. Local check: `uv run acw status`.
 | `uv run acw make-short --job-id X [--case "hint"] [--urgent]` | produce one short (no upload); resumes if re-run |
 | `uv run acw make-short --job-id X --offline` | fictional test short, no network (CI does this on every push) |
 
+| `uv run acw publish [--date YYYY-MM-DD]` | dry run: shows which buffered video goes in which slot, writes publish_plan.json |
+| `uv run acw publish --live` | uploads for real (also needs PIPELINE_ENABLED=true and YOUTUBE_* secrets) |
+| `uv run python scripts/setup_channel.py [--apply]` | apply name/description/keywords/banner/playlists to the channel |
+
+## Uploads stay private?
+Until the Google Cloud project passes YouTube's API audit (SETUP step 5), YouTube locks
+API uploads to **private** and `publishAt` won't make them public. Nothing in the pipeline
+can bypass this; it clears once the audit is approved.
+
 ## Making a test short in GitHub
 Actions → **slice** → Run workflow (optionally type a case or theme). When it finishes,
 download the `slice-<run id>` artifact: `data/jobs/slice-*/short.mp4` plus every

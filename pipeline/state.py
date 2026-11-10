@@ -241,12 +241,17 @@ class State:
         ).fetchall()
         return [r[0] for r in rows]
 
-    def take_from_buffer(self, slot: str) -> str | None:
-        """Atomically claim the oldest unused buffered video for a slot."""
+    def take_from_buffer(self, slot: str, job_id: str | None = None) -> str | None:
+        """Atomically claim a buffered video for a slot (oldest, or the given job)."""
         with self.tx() as c:
-            row = c.execute(
-                "SELECT job_id FROM buffer WHERE used_at IS NULL ORDER BY added_at LIMIT 1"
-            ).fetchone()
+            if job_id is None:
+                row = c.execute(
+                    "SELECT job_id FROM buffer WHERE used_at IS NULL ORDER BY added_at LIMIT 1"
+                ).fetchone()
+            else:
+                row = c.execute(
+                    "SELECT job_id FROM buffer WHERE used_at IS NULL AND job_id = ?", (job_id,)
+                ).fetchone()
             if row is None:
                 return None
             c.execute(
