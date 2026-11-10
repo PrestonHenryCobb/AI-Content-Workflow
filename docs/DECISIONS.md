@@ -162,6 +162,14 @@
   only human beings as people (an outlet, "Mental Floss", had been listed and blocked
   the word "mental").
 
+- **D39. Name gate matches proper-name words only (third live run):** the fact pack described
+  unnamed people with phrases ("unnamed claimed granddaughter of missing father"), and the
+  word-based check banned "missing", "claimed", "father", "1912"… Now only capitalized,
+  alphabetic name words count (not months, weekdays, titles, "Unnamed", "Doe"), matched
+  case-sensitively as whole words. A blocked person's single name word still only counts if no
+  allowed person shares it. The verify prompt asks for "Unnamed" when no name was published.
+  The Haiku policy gate also receives the blocked names and judges usage in context, as a second layer.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.

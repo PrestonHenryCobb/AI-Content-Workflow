@@ -209,7 +209,26 @@ def test_family_surname_does_not_block_allowed_victim(sc, pack):
     assert script.name_violations(sc.model_copy(update={"lines": lines}), p2)
     lines[3] = lines[3].model_copy(update={"text": "Detectives questioned Doyle twice."})
     assert script.name_violations(sc.model_copy(update={"lines": lines}), p2) == [
-        "uses a name that is not allowed: doyle"]
+        "uses a name that is not allowed: Doyle"]
+
+
+def test_descriptive_names_and_common_words_never_block(sc, pack):
+    from pipeline.schemas import Person
+
+    people = [
+        Person(role="family", name="unnamed claimed granddaughter of missing father",
+               name_allowed=False, is_minor=False),
+        Person(role="other", name="Unnamed DNA researcher (1912 sample)", name_allowed=False),
+        Person(role="family", name="June Hartley", name_allowed=False),
+    ]
+    p2 = pack.model_copy(update={"people": people})
+    lines = list(sc.lines)
+    lines[2] = lines[2].model_copy(update={
+        "text": "In June 1912, a missing four-year-old is found, almost; a father claimed him."})
+    assert script.name_violations(sc.model_copy(update={"lines": lines}), p2) == []
+    lines[3] = lines[3].model_copy(update={"text": "Hartley never spoke to reporters."})
+    assert script.name_violations(sc.model_copy(update={"lines": lines}), p2) == [
+        "uses a name that is not allowed: Hartley"]
 
 
 def test_normalize_fixes_hook(sc):

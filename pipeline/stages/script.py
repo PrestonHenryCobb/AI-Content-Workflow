@@ -37,21 +37,40 @@ def lint(script: Script, pack: FactPack, min_words: int = MIN_WORDS,
     return problems
 
 
+_NOT_NAMES = {
+    "The", "A", "An", "Unnamed", "Unknown", "Unidentified", "Mr", "Mrs", "Ms", "Miss", "Dr",
+    "Jr", "Sr", "Detective", "Officer", "Sheriff", "Deputy", "Agent", "Sergeant", "Captain",
+    "His", "Her", "Their", "Of", "And", "Doe", "John", "Jane", "Baby",
+    "January", "February", "March", "April", "May", "June", "July", "August", "September",
+    "October", "November", "December", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday",
+    "Saturday", "Sunday",
+}
+
+
+def proper_tokens(name: str) -> list[str]:
+    """Words of a name that look like a real proper name (capitalized, alphabetic)."""
+    return [w for w in re.findall(r"[A-Za-z][A-Za-z'\-]+", name)
+            if w[0].isupper() and len(w) > 2 and w not in _NOT_NAMES]
+
+
 def name_violations(script: Script, pack: FactPack) -> list[str]:
-    """Blocked names in the text. A blocked person's surname alone only counts if no allowed
-    person shares it (family members usually share the victim's surname)."""
-    text = " " + re.sub(r"[^a-z0-9' ]", " ", (" ".join(ln.text for ln in script.lines) + " "
-                                              + " ".join(script.titles)).lower()) + " "
-    allowed_parts = {w.lower() for p in pack.people if p.name_allowed for w in p.name.split()}
+    """Blocked names in the script. Only proper-name words count, matched case-sensitively as
+    whole words; a blocked person's single name word only counts if no allowed person shares
+    it (family members usually share the victim's surname). Descriptive 'names' like
+    "unnamed claimed granddaughter" contribute nothing."""
+    text = " ".join(ln.text for ln in script.lines) + " " + " ".join(script.titles)
+    allowed = {w for p in pack.people if p.name_allowed for w in proper_tokens(p.name)}
     out: list[str] = []
     for p in pack.people:
         if p.name_allowed:
             continue
-        full = re.sub(r"[^a-z0-9' ]", " ", p.name.lower()).strip()
-        parts = full.split()
-        candidates = [full] + [w for w in parts if len(w) > 3 and w not in allowed_parts]
+        toks = proper_tokens(p.name)
+        if not toks:
+            continue
+        candidates = ([" ".join(toks)] if len(toks) > 1 else []) + [
+            t for t in toks if t not in allowed]
         for c in candidates:
-            if c and f" {c} " in text:
+            if re.search(rf"(?<![A-Za-z]){re.escape(c)}(?![A-Za-z])", text):
                 out.append(f"uses a name that is not allowed: {c}")
                 break
     return out
