@@ -1,0 +1,37 @@
+# One-time (re-runnable): apply the Cold Save identity to the YouTube channel and save
+# channel/playlist ids to config/youtube_ids.json on this branch. Run after SETUP step 4.
+name: channel-setup
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Actually change the channel (unchecked = dry run)"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+      YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Apply channel identity
+        env:
+          APPLY: ${{ inputs.apply }}
+        run: |
+          if [ "$APPLY" = "true" ]; then uv run --no-sync python scripts/setup_channel.py --apply
+          else uv run --no-sync python scripts/setup_channel.py; fi
+      - name: Commit channel/playlist ids
+        if: inputs.apply
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add config/youtube_ids.json
+          git diff --cached --quiet || git commit -m "channel-setup: save YouTube channel and playlist ids"
+          git push

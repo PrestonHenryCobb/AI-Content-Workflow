@@ -10,7 +10,8 @@
   Every YouTube API call goes through `Governor.use_youtube_quota`. No exceptions.
 - Anything that publishes must check `pipeline.config.pipeline_enabled()` and default to dry-run.
 - Tests never hit paid or external APIs; mock providers.
-- Never commit media, `.env`, or `data/state.db`. Media goes to the bucket.
+- Never commit media, `.env`, or `data/state.db` to the code branch. State goes to the `state`
+  branch and spare videos to the `buffer` release via `scripts/state.sh` (DECISIONS D27).
 - Model IDs and prices live only in `config/models.yaml`. Don't hardcode them elsewhere.
 - Keep `README.md` status, `docs/SETUP.md` and `docs/RUNBOOK.md` current with each change.
 - Hard content rules (GOD_PROMPT §5) are gates, not guidelines: no naming uncharged people,
