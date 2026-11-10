@@ -59,7 +59,7 @@ jobs:
           uv run --no-sync acw make-short "${args[@]}"
       - name: Budget / usage report
         if: always()
-        run: uv run --no-sync acw budget || true
+        run: if [ -x .venv/bin/acw ]; then uv run --no-sync acw budget; else echo "skipped: run stopped before setup"; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
