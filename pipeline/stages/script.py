@@ -66,7 +66,8 @@ def normalize(script: Script) -> Script:
 
 def write_script(llm: Completer, pack: FactPack, *, feedback: str = "", job_id: str | None = None,
                  urgent: bool = False, hook_style: str = "impossible_fact",
-                 cta: str | None = None, style_notes: list[str] | None = None) -> Script:
+                 cta: str | None = None, style_notes: list[str] | None = None,
+                 previous: Script | None = None) -> Script:
     from pipeline.strategy import HOOK_STYLES
 
     if cta is None:
@@ -81,6 +82,10 @@ def write_script(llm: Completer, pack: FactPack, *, feedback: str = "", job_id: 
         hook_instruction=HOOK_STYLES.get(hook_style, HOOK_STYLES["impossible_fact"]),
         style_notes=notes,
         feedback=f"\nFix these problems from the last draft:\n{feedback}" if feedback else "",
+        previous_draft=(
+            "\n\nRevise this previous draft. Change only what the problems above require and "
+            "keep everything else as it is:\n" + previous.model_dump_json(indent=1)
+        ) if previous is not None else "",
         fact_pack=pack.model_dump_json(indent=1),
     )
     res = llm.complete("script", prompt, json_schema=Script.json_schema(), job_id=job_id,

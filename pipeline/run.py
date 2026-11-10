@@ -21,7 +21,7 @@ from pipeline.stages import art, discover, qa, render, script, verify, voice
 from pipeline.state import JobStatus, Stage, State
 
 log = logging.getLogger("acw")
-MAX_REWRITES = 2
+MAX_REWRITES = 3
 
 
 @dataclass
@@ -41,6 +41,40 @@ def _case_no(state: State, job_id: str) -> str:
             return str(meta["case_no"])
     n = state.conn.execute("SELECT COUNT(*) FROM jobs WHERE kind = 'short'").fetchone()[0]
     return f"CASE #{int(n) + 1:04d}"
+
+
+def script_with_gates(llm: Completer, pack: FactPack, *, job_id: str, urgent: bool,
+                      hook_style: str, cta: str, notes: list[str],
+                      max_rewrites: int = MAX_REWRITES) -> tuple[Script, list[Check], float] | str:
+    """Write, lint, fact-check, policy-check; revise the *previous draft* on failure.
+
+    Returns (script, checks, quality) or the last feedback string if every attempt failed.
+    The policy gate only runs once the fact gate passes, to save Pro usage.
+    """
+    feedback = ""
+    previous: Script | None = None
+    for attempt in range(max_rewrites + 1):
+        sc = script.write_script(llm, pack, feedback=feedback, job_id=job_id, urgent=urgent,
+                                 hook_style=hook_style, cta=cta, style_notes=notes,
+                                 previous=previous)
+        previous = sc
+        problems = script.lint(sc, pack)
+        if problems:
+            feedback = "\n".join(problems)
+            log.info("script attempt %d failed lint: %s", attempt + 1, feedback)
+            continue
+        fact_chk, quality, fact_fix = qa.fact_gate(llm, pack, sc, job_id=job_id, urgent=urgent)
+        if not fact_chk.passed:
+            feedback = fact_fix
+            log.info("script attempt %d failed fact check: %s", attempt + 1, feedback)
+            continue
+        pol_chk, pol_fix = qa.policy_gate(llm, pack, sc, job_id=job_id, urgent=urgent)
+        if pol_chk.passed:
+            return sc, [Check(name="script_lint", passed=True, detail="ok"), fact_chk,
+                        pol_chk], quality
+        feedback = pol_fix
+        log.info("script attempt %d failed policy: %s", attempt + 1, feedback)
+    return feedback
 
 
 def make_short(job_id: str, *, case_hint: str = "", offline: bool = False,
@@ -103,29 +137,15 @@ def make_short(job_id: str, *, case_hint: str = "", offline: bool = False,
         strategy.record_arm(state, job_id, "cta", cta)
         notes = [str(n) for n in strategy.get(state, "writer_notes", [])]
         meta.update({"hook_style": hook_style, "cta": cta})
-        feedback = ""
-        for attempt in range(MAX_REWRITES + 1):
-            sc = script.write_script(llm, pack, feedback=feedback, job_id=job_id, urgent=urgent,
-                                     hook_style=hook_style, cta=cta, style_notes=notes)
-            problems = script.lint(sc, pack)
-            if problems:
-                feedback = "\n".join(problems)
-                log.info("script attempt %d failed lint: %s", attempt + 1, feedback)
-                continue
-            fact_chk, quality, fact_fix = qa.fact_gate(llm, pack, sc, job_id=job_id, urgent=urgent)
-            pol_chk, pol_fix = qa.policy_gate(llm, pack, sc, job_id=job_id, urgent=urgent)
-            if fact_chk.passed and pol_chk.passed:
-                checks = [Check(name="script_lint", passed=True, detail="ok"), fact_chk, pol_chk]
-                meta["quality"] = round(quality, 2)
-                job.save("script.json", sc)
-                job.save_json("text_checks.json", [c.model_dump() for c in checks])
-                break
-            feedback = "\n".join(f for f, ok in ((fact_fix, fact_chk.passed),
-                                                 (pol_fix, pol_chk.passed)) if not ok)
-            log.info("script attempt %d rejected: %s", attempt + 1, feedback)
-        else:
-            mark(Stage.SCRIPT, JobStatus.DISCARDED, f"script failed gates: {feedback[:300]}")
+        outcome = script_with_gates(llm, pack, job_id=job_id, urgent=urgent,
+                                    hook_style=hook_style, cta=cta, notes=notes)
+        if isinstance(outcome, str):
+            mark(Stage.SCRIPT, JobStatus.DISCARDED, f"script failed gates: {outcome[:300]}")
             return Result(job, None, None)
+        sc, checks, quality = outcome
+        meta["quality"] = round(quality, 2)
+        job.save("script.json", sc)
+        job.save_json("text_checks.json", [c.model_dump() for c in checks])
     else:
         checks = [Check.model_validate(c)
                   for c in cast(list[dict[str, Any]], job.load_json("text_checks.json"))]

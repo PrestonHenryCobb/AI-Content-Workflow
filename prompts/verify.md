@@ -1,4 +1,4 @@
-<!-- version: 1 -->
+<!-- version: 2 -->
 Build a fact pack for this case so a script writer can only use verified facts.
 
 Case: {title} ({location}, {year})
@@ -11,7 +11,8 @@ Rules:
   with the URL and a short verbatim quote from that page that supports it.
 - Aim for two independent sources per claim. Keep single-source claims only if important;
   the writer will attribute them ("according to ...").
-- People: list everyone mentioned with their role. name_allowed=false for anyone never
+- People: list every *human being* mentioned, with their role. Never list organizations,
+  agencies, news outlets, websites or places as people. name_allowed=false for anyone never
   charged, anyone acquitted unless their acquittal is the point, minors, and family members.
 - legal_status and active_trial must reflect the latest reporting you can find.
 - agency_contact: the agency to contact with information (from official pages), or "n/a".

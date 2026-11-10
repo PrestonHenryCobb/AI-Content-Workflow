@@ -153,6 +153,15 @@
   a named victim. Full blocked names, and unique blocked surnames, are still rejected.
   A hook that differs from line 1 is now corrected automatically instead of costing a rewrite.
 
+- **D38. Script revision loop (second live run):** rewrites now *revise the previous draft*
+  ("change only what the problems require") instead of starting over, which had kept
+  introducing new problems. The policy gate runs only after the fact gate passes. Up to 4
+  drafts (MAX_REWRITES 3), at about the same call cost as before. The script prompt now
+  separates present-tense narration from claims about the present (those must be dated to a
+  source), and requires every title to be backed by the fact pack. The verify prompt lists
+  only human beings as people (an outlet, "Mental Floss", had been listed and blocked
+  the word "mental").
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.
