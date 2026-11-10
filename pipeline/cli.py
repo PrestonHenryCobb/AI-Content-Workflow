@@ -36,6 +36,12 @@ def cmd_budget(args: argparse.Namespace) -> int:
         "daily_allowance": round(st.daily_allowance, 4),
         "projected_total": round(st.projected_total, 4),
         "active_degradations": st.active_degradations,
+        "claude_calls_today": f"{st.subscription.calls_today}/{st.subscription.daily_cap}",
+        "claude_calls_week": f"{st.subscription.calls_week}/{st.subscription.weekly_cap}",
+        "claude_limit_hits": st.subscription.limit_hits_week,
+        "claude_cooldown_until": (st.subscription.cooldown_until.isoformat()
+                                  if st.subscription.cooldown_until else None),
+        "in_run_window": st.subscription.in_run_window,
     }
     print(json.dumps(out, indent=2) if args.json else
           "\n".join(f"{k:20} {v}" for k, v in out.items()))

@@ -3,6 +3,8 @@
 Autonomous faceless true-crime channel: cold cases and shocking real cases as 45–75 s
 Shorts in a lo-fi PS2-era horror style, 2–3 per day, plus a weekly long-form compilation.
 Publishes to YouTube (primary), TikTok and Instagram with no manual review.
+Claude runs on the owner's Claude Pro subscription (no API bill); the only paid service is
+image generation (~$1–3/week, capped at $5).
 
 **Start here:** [`docs/GOD_PROMPT.md`](docs/GOD_PROMPT.md) is the full spec. Every build
 session starts from it.
@@ -26,7 +28,7 @@ Decisions and open questions are logged in [`docs/DECISIONS.md`](docs/DECISIONS.
 uv sync
 uv run pytest -q          # tests
 uv run acw check-config   # validate config
-uv run acw budget         # weekly spend vs. cap
+uv run acw budget         # weekly spend + Claude usage vs. caps
 uv run acw status         # kill switch, buffer, quota
 ```
 
@@ -34,7 +36,7 @@ uv run acw status         # kill switch, buffer, quota
 | Path | Purpose |
 |---|---|
 | `config/` | every tunable: budget, models, style, voice, animation, schedule, sources, strategy |
-| `pipeline/` | stage code; `budget.py` governs all paid calls, `state.py` is the SQLite store |
+| `pipeline/` | stage code; `llm.py` runs Claude on the subscription, `budget.py` paces usage and spend, `state.py` is the SQLite store |
 | `render/` | PS2 post-process, Blender scene builder, parallax, fonts, SFX |
 | `library/` | CC0 3D kits + reusable clip index |
 | `brand/` | channel identity package |

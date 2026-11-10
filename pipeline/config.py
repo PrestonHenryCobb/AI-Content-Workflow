@@ -35,12 +35,29 @@ class YouTubeQuota(_Strict):
     cost_comment_insert: int
 
 
+class RunWindow(_Strict):
+    start: str
+    end: str
+
+
+class SubscriptionCfg(_Strict):
+    plan: Literal["pro", "max5x", "max20x"]
+    run_window: RunWindow
+    max_calls_per_window_run: int = Field(gt=0)
+    max_calls_per_day: int = Field(gt=0)
+    max_calls_per_week: int = Field(gt=0)
+    cooldown_hours_after_limit: float = Field(ge=0)
+    adapt_on_limit_factor: float = Field(gt=0, le=1)
+    min_weekly_calls_floor: int = Field(gt=0)
+
+
 class BudgetConfig(_Strict):
     week_starts_on: Literal["monday"]
     global_weekly_usd: float = Field(gt=0)
     warn_at_fraction: float = Field(gt=0, le=1)
     degrade_at_fraction: float = Field(gt=0, le=1)
     providers: ProviderCaps
+    subscription: SubscriptionCfg
     degradation_ladder: list[str]
     youtube_quota: YouTubeQuota
 
@@ -64,8 +81,9 @@ class Price(_Strict):
 
 class StageModel(_Strict):
     model: str
+    fallback: str | None = None
     effort: Literal["low", "medium", "high", "xhigh", "max"]
-    batch: bool = False
+    tools: list[str] = Field(default_factory=list)  # [] = no tools (pure text generation)
 
 
 class ImageConfig(_Strict):
@@ -80,6 +98,7 @@ class TTSConfig(_Strict):
 
 
 class ModelsConfig(_Strict):
+    backend: Literal["claude_code", "api"]
     pricing: dict[str, Price]
     batch_discount: float = Field(gt=0, le=1)
     stages: dict[str, StageModel]
@@ -88,7 +107,9 @@ class ModelsConfig(_Strict):
 
     @model_validator(mode="after")
     def _priced(self) -> ModelsConfig:
-        missing = {s.model for s in self.stages.values()} - set(self.pricing)
+        used = {s.model for s in self.stages.values()}
+        used |= {s.fallback for s in self.stages.values() if s.fallback}
+        missing = used - set(self.pricing)
         if missing:
             raise ValueError(f"no pricing for models: {sorted(missing)}")
         return self
@@ -147,6 +168,16 @@ class Settings(BaseModel):
     voice: dict[str, Any]
     sources: dict[str, Any]
     strategy: dict[str, Any]
+
+    @model_validator(mode="after")
+    def _backend_matches_budget(self) -> Settings:
+        if self.models.backend == "claude_code" and self.budget.providers.anthropic != 0:
+            raise ValueError(
+                "backend claude_code runs on the subscription: providers.anthropic must be 0"
+            )
+        if self.models.backend == "api" and self.budget.providers.anthropic == 0:
+            raise ValueError("backend api needs a non-zero providers.anthropic cap")
+        return self
 
 
 @lru_cache(maxsize=1)

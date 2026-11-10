@@ -1,9 +1,14 @@
 """Weekly budget governor (GOD_PROMPT §4).
 
-Every paid call goes through `Governor.authorize()` before it happens and
-`Governor.charge()` after. Caps are per provider; a provider that runs past its
-cap may borrow from the shared `reserve` until that is gone. The global cap is
-never exceeded.
+Two things are governed:
+
+1. **Dollars** (images, optional API). Every paid call goes through `authorize()` before
+   and `charge()` after. Caps are per provider; a provider past its cap may borrow from
+   the shared `reserve`. The global cap is never exceeded.
+2. **Claude subscription usage** (DECISIONS D14). Every `claude -p` call goes through
+   `authorize_llm()` before and `record_llm_call()` after. Calls only run inside the
+   overnight window, under daily/weekly caps, and pause for a cooldown after the plan's
+   limit is hit. Each limit hit shrinks this week's cap so the pacing learns the real limit.
 """
 
 from __future__ import annotations
@@ -29,6 +34,22 @@ class QuotaExceeded(RuntimeError):
     pass
 
 
+class SubscriptionLimited(RuntimeError):
+    """Claude subscription call refused: outside window, over cap, or cooling down."""
+
+
+@dataclass(frozen=True)
+class SubscriptionStatus:
+    calls_today: int
+    calls_week: int
+    daily_cap: int
+    weekly_cap: int               # effective cap after adapting to limit hits
+    limit_hits_week: int
+    cooldown_until: datetime | None
+    in_run_window: bool
+    projected_week: float
+
+
 @dataclass(frozen=True)
 class BudgetStatus:
     week_start: datetime
@@ -36,6 +57,7 @@ class BudgetStatus:
     spent_by_provider: dict[str, float]
     global_cap: float
     projected_total: float
+    subscription: SubscriptionStatus
     degradation_level: int
     active_degradations: list[str]
 
@@ -91,21 +113,28 @@ class Governor:
         ws = self._week_start()
         by_provider = self.state.spend_by_provider_since(ws.isoformat(timespec="seconds"))
         total = sum(by_provider.values())
-        elapsed_days = max(1.0, (self.now() - ws).total_seconds() / 86400)  # floor avoids spikes
-        projected = total / elapsed_days * 7
-        level = self._degradation_level(projected)
+        projected = total / self._elapsed_days(ws) * 7
+        sub = self.subscription_status()
+        level = max(
+            self._degradation_level(projected / self.cfg.global_weekly_usd),
+            self._degradation_level(sub.projected_week / sub.weekly_cap),
+        )
         return BudgetStatus(
             week_start=ws,
             spent_total=total,
             spent_by_provider=by_provider,
             global_cap=self.cfg.global_weekly_usd,
             projected_total=projected,
+            subscription=sub,
             degradation_level=level,
             active_degradations=self.cfg.degradation_ladder[:level],
         )
 
-    def _degradation_level(self, projected: float) -> int:
-        ratio = projected / self.cfg.global_weekly_usd
+    def _elapsed_days(self, ws: datetime) -> float:
+        return max(1.0, (self.now() - ws).total_seconds() / 86400)  # floor avoids spikes
+
+    def _degradation_level(self, ratio: float) -> int:
+        """`ratio` = projected weekly usage / weekly cap."""
         if ratio <= self.cfg.degrade_at_fraction:
             return 0
         # one rung per 5% of projected overshoot past the threshold
@@ -159,3 +188,75 @@ class Governor:
         if units > self.youtube_quota_left():
             raise QuotaExceeded(f"youtube {op}: {units} units > {self.youtube_quota_left()} left")
         self.state.record_quota("youtube", self._quota_day(), op, units)
+
+    # ----- Claude subscription usage -----
+    def _tz(self) -> ZoneInfo:
+        return ZoneInfo(self.settings.schedule.timezone)
+
+    def _in_run_window(self) -> bool:
+        w = self.cfg.subscription.run_window
+        local = self.now().astimezone(self._tz()).strftime("%H:%M")
+        if w.start <= w.end:
+            return w.start <= local < w.end
+        return local >= w.start or local < w.end  # window wraps midnight
+
+    def subscription_status(self) -> SubscriptionStatus:
+        sub = self.cfg.subscription
+        ws = self._week_start()
+        local_midnight = self.now().astimezone(self._tz()).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ).astimezone(UTC)
+        calls_week = self.state.llm_calls_since(ws.isoformat(timespec="seconds"))
+        calls_today = self.state.llm_calls_since(local_midnight.isoformat(timespec="seconds"))
+        hits = self.state.limit_hits_since(ws.isoformat(timespec="seconds"))
+        weekly_cap = max(
+            sub.min_weekly_calls_floor,
+            int(sub.max_calls_per_week * sub.adapt_on_limit_factor ** len(hits)),
+        )
+        cooldown_until = None
+        if hits:
+            until = datetime.fromisoformat(hits[-1]) + timedelta(
+                hours=sub.cooldown_hours_after_limit
+            )
+            if until > self.now():
+                cooldown_until = until
+        return SubscriptionStatus(
+            calls_today=calls_today,
+            calls_week=calls_week,
+            daily_cap=sub.max_calls_per_day,
+            weekly_cap=weekly_cap,
+            limit_hits_week=len(hits),
+            cooldown_until=cooldown_until,
+            in_run_window=self._in_run_window(),
+            projected_week=calls_week / self._elapsed_days(ws) * 7,
+        )
+
+    def authorize_llm(self, stage: str, urgent: bool = False) -> None:
+        """Raise SubscriptionLimited unless a subscription call may run now.
+
+        `urgent=True` (healthcheck refilling an empty slot) may run outside the overnight
+        window, but never during a cooldown or over the caps.
+        """
+        if self.settings.models.backend != "claude_code":
+            return
+        st = self.subscription_status()
+        if st.cooldown_until is not None:
+            raise SubscriptionLimited(
+                f"{stage}: plan limit hit, cooling down until {st.cooldown_until.isoformat()}"
+            )
+        if not urgent and not st.in_run_window:
+            raise SubscriptionLimited(f"{stage}: outside overnight run window")
+        if st.calls_today >= st.daily_cap:
+            raise SubscriptionLimited(f"{stage}: daily cap {st.daily_cap} reached")
+        if st.calls_week >= st.weekly_cap:
+            raise SubscriptionLimited(f"{stage}: weekly cap {st.weekly_cap} reached")
+
+    def record_llm_call(
+        self, model: str, stage: str, ok: bool, limit_hit: bool = False,
+        job_id: str | None = None, duration_s: float | None = None,
+        input_tokens: int | None = None, output_tokens: int | None = None,
+    ) -> None:
+        self.state.record_llm_call(
+            self.settings.models.backend, model, stage, ok, limit_hit, job_id, duration_s,
+            input_tokens, output_tokens, ts=self.now().isoformat(timespec="seconds"),
+        )

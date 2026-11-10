@@ -55,6 +55,20 @@ CREATE TABLE IF NOT EXISTS cases (
     meta        TEXT NOT NULL DEFAULT '{}',
     published_at TEXT
 );
+CREATE TABLE IF NOT EXISTS llm_calls (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts          TEXT NOT NULL,
+    backend     TEXT NOT NULL,             -- claude_code | api
+    model       TEXT NOT NULL,
+    stage       TEXT NOT NULL,
+    job_id      TEXT,
+    ok          INTEGER NOT NULL,
+    limit_hit   INTEGER NOT NULL DEFAULT 0,
+    duration_s  REAL,
+    input_tokens  INTEGER,
+    output_tokens INTEGER
+);
+CREATE INDEX IF NOT EXISTS llm_calls_ts ON llm_calls(ts);
 CREATE TABLE IF NOT EXISTS buffer (
     job_id      TEXT PRIMARY KEY REFERENCES jobs(job_id),
     added_at    TEXT NOT NULL,
@@ -183,6 +197,35 @@ class State:
             "SELECT COALESCE(SUM(units), 0) FROM quota WHERE api = ? AND quota_day = ?",
             (api, quota_day),
         ).fetchone()[0])
+
+    # ----- llm calls (subscription usage) -----
+    def record_llm_call(
+        self, backend: str, model: str, stage: str, ok: bool, limit_hit: bool = False,
+        job_id: str | None = None, duration_s: float | None = None,
+        input_tokens: int | None = None, output_tokens: int | None = None,
+        ts: str | None = None,
+    ) -> None:
+        with self.tx() as c:
+            c.execute(
+                """INSERT INTO llm_calls (ts, backend, model, stage, job_id, ok, limit_hit,
+                                          duration_s, input_tokens, output_tokens)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                (ts or now_iso(), backend, model, stage, job_id, int(ok), int(limit_hit),
+                 duration_s, input_tokens, output_tokens),
+            )
+
+    def llm_calls_since(self, since_iso: str, backend: str = "claude_code") -> int:
+        return int(self.conn.execute(
+            "SELECT COUNT(*) FROM llm_calls WHERE ts >= ? AND backend = ?",
+            (since_iso, backend),
+        ).fetchone()[0])
+
+    def limit_hits_since(self, since_iso: str, backend: str = "claude_code") -> list[str]:
+        rows = self.conn.execute(
+            "SELECT ts FROM llm_calls WHERE ts >= ? AND backend = ? AND limit_hit = 1 "
+            "ORDER BY ts", (since_iso, backend),
+        ).fetchall()
+        return [r[0] for r in rows]
 
     # ----- buffer -----
     def add_to_buffer(self, job_id: str) -> None:

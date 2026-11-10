@@ -1,22 +1,36 @@
-# Weekly spend governor. Owner cap: under $25/week (DECISIONS D6).
-week_starts_on: monday           # budget window resets 00:00 America/New_York
-global_weekly_usd: 24.00
-warn_at_fraction: 0.75           # alert
-degrade_at_fraction: 0.90        # start degradation ladder (projected spend)
+# Weekly governor (GOD_PROMPT §4). Claude runs on the owner's Pro subscription (D14), so the
+# dollar cap now covers only images + retries. Subscription usage is governed separately.
+week_starts_on: monday           # resets 00:00 America/New_York
+global_weekly_usd: 5.00
+warn_at_fraction: 0.75
+degrade_at_fraction: 0.90
 
-providers:                       # per-provider weekly caps (USD)
-  anthropic: 14.00
+providers:                       # USD per week
+  anthropic: 0.00                # subscription; must stay 0 unless backend: api
   images: 3.00
   tts: 0.00                      # Kokoro local
   video: 0.00                    # paid image-to-video OFF
-  reserve: 7.00                  # retries / overflow, any provider
+  reserve: 2.00
 
-# Degradation ladder, applied in order while projected spend > degrade_at_fraction.
+# Claude Pro subscription pacing. Pro has rolling 5-hour windows plus weekly limits that
+# Anthropic does not publish as numbers, so these caps start conservative and adapt.
+subscription:
+  plan: pro
+  # Run all generation overnight so it never eats the owner's daytime usage windows.
+  run_window: {start: "01:00", end: "06:00"}   # America/New_York
+  max_calls_per_window_run: 40
+  max_calls_per_day: 45
+  max_calls_per_week: 220        # est. ~8 calls/short x 21 + compilation + planning
+  cooldown_hours_after_limit: 5  # matches the rolling 5-hour window
+  adapt_on_limit_factor: 0.9     # each limit hit this week shrinks the weekly cap by 10%
+  min_weekly_calls_floor: 120
+
+# Applied in order while projected spend OR projected subscription calls pass the threshold.
 degradation_ladder:
   - disable_paid_video
   - blender_hero_shots_3_to_1
   - library_clips_only
-  - batch_api_for_noncritical
+  - skip_qa_visual_on_library_shots
   - stills_per_short_8_to_6
   - shorts_per_day_3_to_2
   - compilation_reuse_narration

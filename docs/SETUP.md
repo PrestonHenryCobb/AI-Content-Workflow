@@ -11,7 +11,7 @@ click-paths as each integration is built.
 | 4 | Run `uv run python scripts/auth_youtube.py` once to mint a refresh token (script ships in Phase 4) | 4 | ☐ |
 | 5 | Submit the **YouTube API compliance audit** — until approved, API uploads are forced private | 4 | ☐ |
 | 6 | Request a YouTube quota increase (default 10,000 units/day ≈ 6 uploads) | 4 | ☐ |
-| 7 | Anthropic API key | 3 | ☐ |
+| 7 | On your own computer: install Claude Code, run `claude setup-token` (uses your Pro plan), save the token as GitHub secret `CLAUDE_CODE_OAUTH_TOKEN`. Do **not** add an `ANTHROPIC_API_KEY` secret | 3 | ☐ |
 | 8 | fal.ai (or Replicate) API key for Flux Schnell images | 3 | ☐ |
 | 9 | Cloud bucket (Cloudflare R2 free tier recommended) + access keys | 5 | ☐ |
 | 10 | Discord (or Slack) webhook URL for alerts | 5 | ☐ |

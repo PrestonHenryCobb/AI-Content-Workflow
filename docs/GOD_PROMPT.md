@@ -226,45 +226,65 @@ bandit (e.g. Thompson sampling) over: hook style, title template, posting slot, 
 Pick the cheapest model that passes the stage's quality bar. Config lives in
 `config/models.yaml` so swaps are one-line changes.
 
+**Backend: the owner's Claude Pro subscription, not API billing.** Every Claude call runs
+`claude -p` (Claude Code headless) authenticated with `CLAUDE_CODE_OAUTH_TOKEN`, through
+`pipeline/llm.py`. API-key variables are stripped from the child process so a stray key can
+never switch the pipeline to paid billing. Opus stages name a Sonnet fallback in case Opus
+isn't available on Pro. The API backend exists only as a disabled config option.
+
 | Stage | Task | Default | Why |
 |---|---|---|---|
-| Weekly planning, learnings, strategy | deep reasoning, low volume | Claude Opus (latest) | 1×/week, high leverage |
-| Discover scoring, Verify fact pack | research + citation discipline | Claude Sonnet (latest) + web search | accuracy matters |
-| Script writing (shorts + compilation) | creative + constrained | Claude Sonnet (latest) | best quality/cost |
-| Metadata, hashtags, captions chunking | cheap formatting | Claude Haiku (latest) | high volume |
-| QA fact + policy judge | independent check | a *different* model/tier from the writer | avoid self-grading |
-| Visual QA | vision | Claude Sonnet (vision) | frame review |
+| Weekly planning, learnings, strategy | deep reasoning, low volume | Opus 5.5 → fallback Sonnet 5.5 | 1×/week, high leverage |
+| Discover scoring, Verify fact pack | research + citation discipline | Sonnet 5.5 + WebSearch/WebFetch | accuracy matters |
+| Script writing (shorts + compilation) | creative + constrained | Sonnet 5.5 | best quality per usage |
+| Metadata, hashtags, Blender scene specs | cheap formatting | Haiku 5.5 | high volume, light on plan limits |
+| QA fact judge | independent check | Opus 5.5 → fallback Sonnet 5.5 (fresh session) | avoid self-grading |
+| QA policy pre-screen | rule check | Haiku 5.5 | cheap |
+| Visual QA | vision | Sonnet 5.5 | frame review |
 | Images | stills | Flux Schnell (~$0.003/img), configurable | cost per image |
 | Image-to-video (hero shots) | motion | OFF by default (budget < $25/wk) | budget-gated |
 | TTS | voice | Kokoro (local, free) + faster-whisper alignment; ElevenLabs optional | $0 budget |
 | Music/SFX | audio | Epidemic Sound library (or royalty-free pack) | licensing safety |
 
-Use prompt caching for the long static system prompts (style guide, policy rules, voice
-guide). Batch API for non-urgent work (weekly scripts, metadata) at ~50% cost.
+Keep prompts lean: every call counts against the Pro plan's usage limits. Calls run from an
+empty working directory so no repo files are pulled into context.
 
 ---
 
 ## 4. BUDGET GOVERNOR ("ticket limit")
 
-- **Owner-set global cap: under $25/week.** Target split: Claude ≤ $12, images ≤ $2,
-  TTS $0, reserve the rest for retries.
-- `config/budget.yaml` defines a **weekly** cap per provider (tokens / $ / credits /
-  image count / TTS characters) and a global $ cap.
-- Every API call goes through `pipeline/budget.py`, which records spend and refuses calls
-  that would breach the cap.
-- Pacing: spend target per day = remaining_week_budget / remaining_days. If the projected
-  week exceeds 90% of cap, auto-degrade in this order:
-  1. Drop paid image-to-video (already off by default); cut Blender hero shots 3 → 1, then
-     use clip-library matches only
-  2. Move metadata + scripts to Batch API / cheaper tier
-  3. Reduce stills per short (12 → 8 → 6)
-  4. Go from 3 → 2 shorts/day
-  5. Compilation reuses short narration instead of re-scripting
-- **Buffer**: keep ≥4 fully rendered, QA-passed "evergreen" shorts in reserve. Any failed
-  or budget-skipped slot publishes from the buffer. Refill buffer on low-cost days.
-- **YouTube API quota**: default 10,000 units/day; `videos.insert` ≈ 1,600 units ⇒ hard
-  ceiling ~6 uploads/day including thumbnails/playlist calls. Request a quota increase
-  early. Track quota in the governor too.
+Two resources are governed by `pipeline/budget.py`; nothing calls out without it.
+
+**A. Claude Pro subscription usage** (the real "ticket limit")
+- Pro has rolling 5-hour usage windows plus weekly limits; Anthropic doesn't publish exact
+  numbers, so caps in `config/budget.yaml → subscription` start conservative and adapt.
+- All generation runs in an **overnight window (01:00–06:00 ET)** so the pipeline never eats
+  the owner's daytime usage. Videos are uploaded with `publishAt` for their slots.
+- Caps: per-run, per-day, per-week call counts. Estimated need ≈ 8 calls per short ×
+  21 + compilation + planning ≈ 180/week (cap starts at 220).
+- When the plan's limit is hit: stop, record it, cool down 5 h, and shrink this week's cap
+  10% (floor 120). The buffer covers any slot that misses.
+- `urgent=True` (healthcheck refilling an empty slot) may run outside the window, never
+  during a cooldown.
+
+**B. Dollars** (images + retries): owner cap under $25/week; actual cap **$5/week**
+(images $3, reserve $2). Claude costs $0 extra on the subscription.
+
+**Pacing and degradation:** when projected weekly usage of *either* resource passes 90% of
+its cap, turn on one rung per 5% overshoot:
+  1. Disable paid image-to-video (already off by default)
+  2. Blender hero shots 3 → 1
+  3. Clip-library matches only (no new Blender renders)
+  4. Skip visual QA on already-approved library shots
+  5. Stills per short 8 → 6
+  6. Shorts per day 3 → 2
+  7. Compilation reuses short narration instead of re-scripting
+
+**Buffer:** keep ≥4 fully rendered, QA-passed evergreen shorts. Any failed or skipped slot
+publishes from the buffer. Refill on quiet nights.
+
+**YouTube API quota:** 10,000 units/day by default; `videos.insert` ≈ 1,600 ⇒ ~6 uploads/day.
+Resets midnight Pacific. Tracked in the governor. Request an increase early.
 
 ---
 
@@ -304,7 +324,8 @@ guide). Batch API for non-urgent work (weekly scripts, metadata) at ~50% cost.
     Mitigations: public repo (unlimited minutes), clip-library reuse, 480p renders.
 - Storage: rendered media → cloud bucket (R2/S3/GCS) with 30-day lifecycle; DB + metadata
   committed or synced to bucket. Never commit large media to git.
-- Secrets: GitHub Actions secrets only (`ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`,
+- Secrets: GitHub Actions secrets only (`CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`;
+  **never** `ANTHROPIC_API_KEY`), `ELEVENLABS_API_KEY` (optional),
   `YOUTUBE_CLIENT_ID/SECRET/REFRESH_TOKEN`, `TIKTOK_*`, `META_*`, image/video provider keys,
   bucket creds). `.env.example` documents them; `.env` is git-ignored.
 - Alerts: email/Discord webhook on (a) slot missed, (b) buffer < 2, (c) budget > 90%,
@@ -376,7 +397,8 @@ The system cannot do these; put them in `docs/SETUP.md` with exact click-paths:
    Publish the OAuth app to "In production" so refresh tokens don't expire every 7 days.
 3. TikTok developer app + Content Posting API audit (unaudited = private-only posts).
 4. Instagram Business/Creator account linked to a Facebook Page + Meta app for Graph API.
-5. API keys: Anthropic, ElevenLabs, image/video provider, Epidemic Sound (or alt), bucket.
+5. Run `claude setup-token` on your own computer (Pro subscription) and save the token as
+   the `CLAUDE_CODE_OAUTH_TOKEN` secret. Plus keys for the image provider and bucket.
 6. Add all secrets to GitHub → Settings → Secrets and variables → Actions.
 7. Pick the channel name from the generated shortlist.
 8. Flip `PIPELINE_ENABLED=true`.
@@ -387,7 +409,8 @@ The system cannot do these; put them in `docs/SETUP.md` with exact click-paths:
 
 Build in this order; each phase ships working, tested code and a `DECISIONS.md` entry.
 
-1. **Skeleton**: repo structure, config schemas, state DB, budget governor, CI.
+1. **Skeleton**: repo structure, config schemas, state DB, budget + subscription governor,
+   subscription-backed LLM client, CI.
 2. **Brand package**: name, handle, PFP, banner, description, trailer script.
 3. **Offline vertical slice**: one case → fact pack → script → voice → art (incl. parallax,
    Blender scene builder, FX layer, clip library) → render → QA, all local, no uploads.
@@ -400,8 +423,8 @@ Build in this order; each phase ships working, tested code and a `DECISIONS.md` 
 9. **Growth extras** from §7, one at a time, each behind a config flag.
 
 **Done** = for 14 consecutive days the system publishes ≥2 shorts/day + 1 compilation/week
-with zero human action, zero policy strikes, spend ≤ budget, and the owner received each
-weekly digest.
+with zero human action, zero policy strikes, spend ≤ budget, Claude usage inside the Pro
+plan without locking the owner out of daytime use, and the owner received each weekly digest.
 
 ---
 
