@@ -1,0 +1,36 @@
+# Shortly after each YouTube slot: post newly public shorts to TikTok / Instagram Reels.
+# Crons cover the 08:00 / 14:00 / 20:00 ET slots in both EST and EDT (UTC-5 / UTC-4).
+name: crosspost
+on:
+  schedule:
+    - cron: "9 12,13,18,19 * * *"
+    - cron: "9 0,1 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: pipeline-state
+  cancel-in-progress: false
+jobs:
+  crosspost:
+    if: vars.PIPELINE_ENABLED == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PIPELINE_ENABLED: ${{ vars.PIPELINE_ENABLED }}
+      TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+      TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+      TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+      META_IG_USER_ID: ${{ secrets.META_IG_USER_ID }}
+      META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+      ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+      GITHUB_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: scripts/state.sh pull
+      - run: uv run --no-sync acw crosspost --live
+      - if: always()
+        run: scripts/state.sh push

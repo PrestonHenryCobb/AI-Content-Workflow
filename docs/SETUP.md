@@ -19,8 +19,8 @@ click-paths as each integration is built.
 | 9 | ~~Cloud bucket~~ not needed: state lives on a `state` branch and a `buffer` release (DECISIONS D27) | 5 | ☑ |
 | 10 | Alerts arrive as GitHub issues (emailed to you automatically). Optional: Discord/Slack webhook as secret `ALERT_WEBHOOK_URL` | 5 | ☐ |
 | 11 | Pick the channel name from the shortlist in `brand/name_shortlist.md` | 2 | ☑ Cold Save |
-| 12 | TikTok developer app + Content Posting API audit | 8 | ☐ |
-| 13 | Instagram Business account linked to a Facebook Page + Meta app | 8 | ☐ |
+| 12 | TikTok (optional): [developers.tiktok.com](https://developers.tiktok.com) → create app → add **Content Posting API** (Direct Post) → get client key/secret → authorize your TikTok account once to get a refresh token → secrets `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`, `TIKTOK_REFRESH_TOKEN` → set `tiktok.enabled: true` in `config/crosspost.yaml`. Posts are private (SELF_ONLY) until TikTok approves the app audit; then set `privacy_level: PUBLIC_TO_EVERYONE` | 8 | ☐ |
+| 13 | Instagram (optional): switch the IG account to Professional (Creator or Business) and link a Facebook Page → [developers.facebook.com](https://developers.facebook.com) → app with Instagram Graph API → in Business Settings create a **System User** with the IG account as an asset and generate a token (doesn't expire) with `instagram_basic`, `instagram_content_publish`, `pages_show_list` → secrets `META_IG_USER_ID`, `META_ACCESS_TOKEN` → set `instagram.enabled: true` in `config/crosspost.yaml` | 8 | ☐ |
 | 14 | Add every key from `.env.example` to GitHub → Settings → Secrets and variables → Actions | 5 | ☐ |
 | 15 | When steps 1–8 are done: Settings → Secrets and variables → Actions → **Variables** → New: `PIPELINE_ENABLED` = `true`. This turns on the nightly, healthcheck and weekly schedules and real uploads | 5 | ☐ |
 | 16 | Recommended first: Actions → **nightly** → Run workflow with *dry run* checked, and look at the result before step 15 | 5 | ☐ |

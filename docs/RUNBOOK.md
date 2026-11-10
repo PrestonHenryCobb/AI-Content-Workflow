@@ -6,6 +6,7 @@
 | nightly | 01:17 ET daily | restore state → pull analytics → make shorts (today's slots + refill buffer to 4) → schedule today's slots → save state |
 | healthcheck | every 4 h | fill any open slot in the next 12 h from the buffer; alert if none |
 | weekly | Sun 00:11 EST / 01:11 EDT | weekly planner → build + QA the compilation, schedule it for Sun 12:00 ET, post the digest issue |
+| crosspost | :09 after each slot | post newly public shorts to TikTok / Instagram (if enabled) |
 | ci | every push | lint, types, tests, render the fictional test short |
 
 State: `state` branch (DB + JSON) and `buffer` release (spare videos). Don't edit either by
@@ -30,6 +31,7 @@ set them to private in YouTube Studio if you need to stop those too. Local check
 | `uv run acw nightly [--dry-run] [--max-jobs N]` | what the nightly workflow runs |
 | `uv run acw healthcheck [--dry-run]` | what the healthcheck workflow runs |
 | `uv run acw weekly [--dry-run] [--offline] [--post-digest]` | build, QA and schedule the Sunday compilation |
+| `uv run acw crosspost [--live]` | post shorts that went public on YouTube to TikTok/IG |
 | `uv run acw analytics` | pull YouTube Analytics for videos 2–28 days old |
 | `uv run acw learn [--offline]` | weekly planner: insights, case mix, writer notes (needs ≥ 6 videos with stats) |
 | `uv run acw digest [--post]` | print (or post as an issue) the weekly digest |

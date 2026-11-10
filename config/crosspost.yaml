@@ -1,0 +1,10 @@
+# Phase 8 cross-posting. Each platform also needs its secrets (SETUP steps 12-13).
+tiktok:
+  enabled: false
+  # Unaudited TikTok apps may only post SELF_ONLY (private). Switch to PUBLIC_TO_EVERYONE
+  # after TikTok approves the app's Content Posting API audit.
+  privacy_level: SELF_ONLY
+instagram:
+  enabled: false
+  graph_version: v21.0
+window_hours: 36      # cross-post videos whose YouTube slot passed within this window

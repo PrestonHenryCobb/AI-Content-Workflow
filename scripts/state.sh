@@ -35,7 +35,12 @@ if [ "$cmd" = "push" ]; then
     gh release create "$REL" --title "Video buffer (managed by pipeline)" \
       --notes "Spare QA-passed shorts waiting for a slot. Managed automatically." --prerelease
   have=$(gh release view "$REL" --json assets -q '.assets[].name' || true)
-  buffered=$(sqlite3 data/state.db "SELECT job_id FROM buffer WHERE used_at IS NULL" 2>/dev/null || true)
+  # keep videos that are still buffered OR went to YouTube in the last 48 h / are scheduled
+  # (TikTok/Instagram cross-posting happens after the YouTube slot)
+  buffered=$(sqlite3 data/state.db "SELECT job_id FROM buffer WHERE used_at IS NULL
+    UNION SELECT job_id FROM publications WHERE platform='youtube' AND status='scheduled'
+      AND slot >= strftime('%Y-%m-%dT%H:%M:%S', 'now', '-2 days')" 2>/dev/null || \
+    sqlite3 data/state.db "SELECT job_id FROM buffer WHERE used_at IS NULL" 2>/dev/null || true)
   for job in $buffered; do
     f="data/jobs/$job/short.mp4"
     if [ -f "$f" ] && ! grep -qx "$job.mp4" <<<"$have"; then

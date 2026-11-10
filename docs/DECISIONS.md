@@ -126,6 +126,16 @@
   not the code branch. Style notes are appended under "never override the hard rules".
   Slot times are *not* auto-changed; the digest shows the data and the owner decides.
 
+- **D34. Cross-posting runs after the YouTube slot** (TikTok and Instagram APIs have no
+  publishAt): `crosspost` workflow at :09 past the slot hours (covers EST and EDT), posting
+  anything public on YouTube in the last 36 h that isn't on that platform yet. Up to 3
+  attempts per platform per video; one platform failing never blocks the other. TikTok posts
+  set `is_aigc: true` and start `SELF_ONLY` until the app audit passes. Captions carry the
+  AI-assisted disclosure. Videos stay in the `buffer` release for 48 h after their YouTube
+  slot so cross-posting has the file. Both platforms are off by default (config/crosspost.yaml).
+  Not verifiable without accounts: TikTok refresh-token rotation (we alert if it rotates,
+  since workflows can't update secrets) and the exact Graph API version. Check both on first use.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.

@@ -209,6 +209,15 @@ def cmd_learn(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_crosspost(args: argparse.Namespace) -> int:
+    from pipeline import crosspost
+
+    state = State()
+    for r in crosspost.run(state, live=args.live):
+        print(" ".join(f"{k}={v}" for k, v in r.items()))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="acw", description="AI-Content-Workflow pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -244,6 +253,9 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--dry-run", action="store_true")
     w.add_argument("--post-digest", action="store_true")
     w.set_defaults(fn=cmd_weekly)
+    cp = sub.add_parser("crosspost", help="post shorts that went public on YouTube to TikTok/IG")
+    cp.add_argument("--live", action="store_true", help="also needs PIPELINE_ENABLED=true")
+    cp.set_defaults(fn=cmd_crosspost)
     sub.add_parser("analytics", help="pull YouTube Analytics for recent videos").set_defaults(
         fn=cmd_analytics)
     ln = sub.add_parser("learn", help="weekly planner: insights, case mix, writer notes")
