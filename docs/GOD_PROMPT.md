@@ -67,7 +67,8 @@ Locked style tokens (store in `config/style.yaml`, inject into every image promp
 ### 1.5 Channel identity package (generate once, version in `brand/`)
 Produce and keep in repo:
 - **Name**: generate 20 candidates; score for memorability, availability (YouTube handle,
-  TikTok, IG, .com), search-safety, and non-infringement; pick the top one. Examples of the
+  TikTok, IG, .com), search-safety, and non-infringement; present a shortlist to the owner
+  to pick from (one-time decision). Examples of the
   vibe: "Case File: Unloaded", "Memory Card Missing", "Evidence.bin", "Disc 2: Unsolved".
 - **Handle** consistent across all platforms.
 - **Profile picture**: low-poly evidence-box or CRT TV emitting fog, readable at 48 px.
@@ -135,8 +136,8 @@ Rules: present tense for tension, second person sparingly, no speculation stated
 "allegedly"/"police say" where required, never invent dialogue attributed to real people.
 
 ### Stage 4 — Voice
-- TTS (ElevenLabs or equivalent; fallback provider configured). Word-level timestamps
-  required for captions.
+- TTS: Kokoro run locally in CI (free). Word-level timestamps via faster-whisper forced
+  alignment. ElevenLabs is an optional provider behind a config switch.
 - Post-process: light reverb + low-pass "radio" EQ on the hook line, loudness normalize.
 
 ### Stage 5 — Art
@@ -177,7 +178,7 @@ Nothing publishes without passing **all** automated checks; log every verdict.
   `status.containsSyntheticMedia` / altered-content disclosure as required,
   `selfDeclaredMadeForKids=false`, category 25 (News & Politics) or 24 (Entertainment) —
   A/B and pick by data. Schedule via `publishAt` so videos are uploaded ahead of time.
-- Default slots (owner's timezone, tune via analytics): 08:00, 14:00, 20:00.
+- Default slots (US Eastern, tune via analytics): 08:00, 14:00, 20:00 ET.
 - Add to playlists, post pinned comment, set thumbnail for long-form.
 - **TikTok** via Content Posting API; **Instagram** via Graph API (Reels, Business account).
   Cross-posting is a separate stage so a TikTok outage never blocks YouTube.
@@ -219,9 +220,9 @@ Pick the cheapest model that passes the stage's quality bar. Config lives in
 | Metadata, hashtags, captions chunking | cheap formatting | Claude Haiku (latest) | high volume |
 | QA fact + policy judge | independent check | a *different* model/tier from the writer | avoid self-grading |
 | Visual QA | vision | Claude Sonnet (vision) | frame review |
-| Images | stills | configurable (Flux / Imagen / GPT-image / SDXL+LoRA on GPU) | cost per image |
-| Image-to-video (hero shots) | motion | configurable (Kling / Runway / Veo / LTX) | budget-gated |
-| TTS | voice | ElevenLabs (fallback: OpenAI TTS / Azure) | timestamps + quality |
+| Images | stills | Flux Schnell (~$0.003/img), configurable | cost per image |
+| Image-to-video (hero shots) | motion | OFF by default (budget < $25/wk) | budget-gated |
+| TTS | voice | Kokoro (local, free) + faster-whisper alignment; ElevenLabs optional | $0 budget |
 | Music/SFX | audio | Epidemic Sound library (or royalty-free pack) | licensing safety |
 
 Use prompt caching for the long static system prompts (style guide, policy rules, voice
@@ -231,6 +232,8 @@ guide). Batch API for non-urgent work (weekly scripts, metadata) at ~50% cost.
 
 ## 4. BUDGET GOVERNOR ("ticket limit")
 
+- **Owner-set global cap: under $25/week.** Target split: Claude ≤ $12, images ≤ $2,
+  TTS $0, reserve the rest for retries.
 - `config/budget.yaml` defines a **weekly** cap per provider (tokens / $ / credits /
   image count / TTS characters) and a global $ cap.
 - Every API call goes through `pipeline/budget.py`, which records spend and refuses calls
@@ -355,7 +358,7 @@ The system cannot do these; put them in `docs/SETUP.md` with exact click-paths:
 4. Instagram Business/Creator account linked to a Facebook Page + Meta app for Graph API.
 5. API keys: Anthropic, ElevenLabs, image/video provider, Epidemic Sound (or alt), bucket.
 6. Add all secrets to GitHub → Settings → Secrets and variables → Actions.
-7. Set the weekly budget numbers in `config/budget.yaml`.
+7. Pick the channel name from the generated shortlist.
 8. Flip `PIPELINE_ENABLED=true`.
 
 ---

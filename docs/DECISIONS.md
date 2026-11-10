@@ -11,13 +11,21 @@
 - **D4. GitHub Actions cron is the orchestrator**, starting on the free tier.
 - **D5. A weekly budget governor sits in front of every paid API call** and degrades output
   in a fixed order before it would overspend.
+- **D6. Weekly budget: under $25/week total** (owner, 2026-11-10). Image-to-video clips are
+  off by default. Estimated spend at 3 shorts/day plus 1 compilation: Claude ~$5–10, images
+  ~$0.50–1, voice $0. The governor still drops to 2/day if spend is on track to pass the cap.
+- **D7. Channel name: the pipeline generates ~20 candidates and checks handle availability;
+  the owner picks from the shortlist.**
+- **D8. Posting timezone: US Eastern.** Slots start at 08:00 / 14:00 / 20:00 ET and are
+  tuned later by analytics.
+- **D9. Voice: free local TTS (Kokoro) running inside GitHub Actions.** Word timestamps come
+  from a local alignment pass (e.g. faster-whisper). The eerie tone comes from
+  post-processing (pitch down slightly, EQ, reverb, tape hiss) to make up for the plainer
+  base voice. ElevenLabs stays as an optional config switch if budget grows.
+- **D10. Images: Flux Schnell (~$0.003/image)** via a pay-per-use API, at 6–8 stills per short.
 
-## Open — owner input needed
-- **Q1. Weekly budget.** What's the $ ceiling per week? Rough estimate for 21 shorts + 1
-  compilation: ~$25–60/wk on stills only, ~$80–200/wk with image-to-video hero shots.
-- **Q2. Channel name.** Pipeline will propose ~20 candidates; owner picks or lets it auto-pick.
-- **Q3. Timezone** for posting slots (defaults to US Eastern).
-- **Q4. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
+## Open
+- **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.
 
 ## Known risks
