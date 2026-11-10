@@ -1,0 +1,14 @@
+# Narrator (DECISIONS D9). Locked once chosen; changing it breaks channel identity.
+provider: kokoro
+kokoro:
+  voice: am_onyx                # deep male; finalize after A/B in Phase 3
+  speed: 0.92
+post_fx:
+  pitch_semitones: -1.5
+  lowpass_hz_hook: 3400         # "radio" EQ on the hook line only
+  reverb_room: 0.25
+  tape_hiss_db: -38
+loudness:
+  integrated_lufs: -14
+  true_peak_dbtp: -1
+alignment: faster-whisper-small  # word timestamps for captions

@@ -1,0 +1,25 @@
+# "Lost PS2 Disc" visual identity (GOD_PROMPT §1.3). Evokes an era; copies no specific game.
+image_prompt_prefix: >-
+  low-poly 3D render, early 2000s console graphics, PS2 era survival horror atmosphere,
+  heavy distance fog, crushed blacks, desaturated sodium orange and sickly green palette,
+  flat shading, low resolution textures, liminal empty location, night, eerie stillness
+negative_prompt: >-
+  photorealistic face, real person likeness, gore, blood, text, watermark, logo,
+  modern graphics, high detail, bright colors, cartoon, anime
+post_process:
+  internal_height: 360          # downscale target before upscale
+  palette_colors: 48
+  dither: bayer4
+  vertex_wobble_px: 1.5
+  scanlines: 0.25
+  chromatic_aberration_px: 1
+  vhs_noise: 0.15
+  date_stamp: true
+captions:
+  font: render/fonts/pixel.ttf
+  words_per_chunk: [2, 4]
+  highlight_color: "#d8ff3c"
+  base_color: "#f2efe6"
+output:
+  short: {width: 1080, height: 1920, fps: 30}
+  long:  {width: 1920, height: 1080, fps: 30}

@@ -1,0 +1,14 @@
+# Allowlisted case sources. "lead_only" sources may suggest cases but never be cited.
+citable:
+  - {name: NamUs, url: https://namus.nij.ojp.gov}
+  - {name: The Charley Project, url: https://charleyproject.org}
+  - {name: The Doe Network, url: https://www.doenetwork.org}
+  - {name: FBI Seeking Information, url: https://www.fbi.gov/wanted}
+  - {name: Wikipedia, url: https://en.wikipedia.org, note: cite its sources where possible}
+  - {name: Court records, url: null, note: public dockets only}
+  - {name: Reputable news, url: null, note: AP, Reuters, major regional papers}
+lead_only:
+  - {name: r/UnresolvedMysteries, url: https://www.reddit.com/r/UnresolvedMysteries}
+min_independent_citations: 2
+case_mix: {unsolved: 0.60, solved_with_twist: 0.25, strange_but_true: 0.15}
+min_case_age_years: 10

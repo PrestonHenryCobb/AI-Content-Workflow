@@ -143,7 +143,21 @@ Rules: present tense for tension, second person sparingly, no speculation stated
 ### Stage 5 — Art
 - Generate 6–12 stills per short from the shot list with the locked style tokens + per-case
   details (era, region, weather, location type). Same seed family per case for consistency.
-- Optional 2–4 s image-to-video clips for hero shots only (budget-gated).
+- **Motion stack ($0 by default — see `config/animation.yaml`):**
+  1. **2.5D parallax** on every still: local depth estimation (Depth Anything V2 small,
+     CPU) → layered camera moves (push-in, dolly, handheld sway).
+  2. **Procedural low-poly 3D scenes in Blender** (headless, CPU, 480p, Workbench/low-sample
+     Cycles) for 2–3 hero shots per short. Claude emits a small `scene_spec.json`
+     (location template, props, lights, fog, camera path, duration); `render/blender/`
+     builds it from CC0 kits (Kenney, Quaternius, Poly Pizza CC0) and parametric templates
+     (hallway, motel room, gas station, forest road, interrogation room, living room).
+  3. **Ambient FX layer** on everything: light flicker, fog drift, dust, VHS glitch, CRT
+     roll, blinking date stamp, static cuts (FFmpeg/NumPy).
+  4. **Clip library** (`library/clips/`, metadata in DB, media in bucket): every rendered
+     loop is tagged and reused; shot planner prefers a library match before rendering new.
+  5. **Paid image-to-video**: off by default; when enabled, at most 1 hero shot per weekly
+     compilation, governed by the budget.
+- Human figures are always faceless mannequins/silhouettes — never animated realistic people.
 - Programmatic PS2 pass (`render/shaders/`): downscale → palette quantize → dither →
   vertex-wobble displacement → nearest upscale → scanlines → VHS noise. This pass is what
   actually guarantees the look; the image model only needs to get composition right.
@@ -240,7 +254,8 @@ guide). Batch API for non-urgent work (weekly scripts, metadata) at ~50% cost.
   that would breach the cap.
 - Pacing: spend target per day = remaining_week_budget / remaining_days. If the projected
   week exceeds 90% of cap, auto-degrade in this order:
-  1. Drop image-to-video hero shots → stills only
+  1. Drop paid image-to-video (already off by default); cut Blender hero shots 3 → 1, then
+     use clip-library matches only
   2. Move metadata + scripts to Batch API / cheaper tier
   3. Reduce stills per short (12 → 8 → 6)
   4. Go from 3 → 2 shorts/day
@@ -285,6 +300,8 @@ guide). Batch API for non-urgent work (weekly scripts, metadata) at ~50% cost.
     from buffer and alert.
   - `ci.yml` — lint, type-check, unit tests, a dry-run render on every push.
   - Move rendering to a cheap GPU/VM runner only if Actions minutes/time limits bite.
+    Note: private repos get 2,000 free Actions minutes/month; Blender renders can eat that.
+    Mitigations: public repo (unlimited minutes), clip-library reuse, 480p renders.
 - Storage: rendered media → cloud bucket (R2/S3/GCS) with 30-day lifecycle; DB + metadata
   committed or synced to bucket. Never commit large media to git.
 - Secrets: GitHub Actions secrets only (`ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`,
@@ -335,7 +352,10 @@ AI-Content-Workflow/
 │   ├── compilation.py  budget.py  buffer.py  state.py  providers/
 ├── render/
 │   ├── shaders/              # PS2 post-process pass
+│   ├── blender/              # headless scene builder + location templates
+│   ├── parallax/             # depth-based 2.5D camera moves
 │   ├── fonts/  sfx/  templates/
+├── library/                  # CC0 3D kits + clip-library index (media in bucket)
 ├── prompts/                  # versioned prompt templates per stage
 ├── scripts/                  # one-off tools: auth bootstrap, takedown, backfill
 ├── tests/                    # unit + golden-file + dry-run render tests
@@ -369,8 +389,9 @@ Build in this order; each phase ships working, tested code and a `DECISIONS.md` 
 
 1. **Skeleton**: repo structure, config schemas, state DB, budget governor, CI.
 2. **Brand package**: name, handle, PFP, banner, description, trailer script.
-3. **Offline vertical slice**: one case → fact pack → script → voice → art → render → QA,
-   all local, no uploads. Golden-file tests.
+3. **Offline vertical slice**: one case → fact pack → script → voice → art (incl. parallax,
+   Blender scene builder, FX layer, clip library) → render → QA, all local, no uploads.
+   Golden-file tests.
 4. **Publisher** (YouTube first, `--dry-run` default), scheduling, buffer.
 5. **Automation**: Actions workflows, healthcheck, alerts, digest.
 6. **Weekly compilation**.

@@ -9,7 +9,7 @@ session starts from it.
 
 ## Status
 - [x] Phase 0: spec ("god prompt")
-- [ ] Phase 1: skeleton, config, state DB, budget governor, CI
+- [x] Phase 1: skeleton, config, state DB, budget governor, CI
 - [ ] Phase 2: brand package
 - [ ] Phase 3: offline vertical slice (one case → finished video)
 - [ ] Phase 4: YouTube publisher + buffer
@@ -20,3 +20,25 @@ session starts from it.
 - [ ] Phase 9: growth extras
 
 Decisions and open questions are logged in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
+## Quick start (local)
+```bash
+uv sync
+uv run pytest -q          # tests
+uv run acw check-config   # validate config
+uv run acw budget         # weekly spend vs. cap
+uv run acw status         # kill switch, buffer, quota
+```
+
+## Layout
+| Path | Purpose |
+|---|---|
+| `config/` | every tunable: budget, models, style, voice, animation, schedule, sources, strategy |
+| `pipeline/` | stage code; `budget.py` governs all paid calls, `state.py` is the SQLite store |
+| `render/` | PS2 post-process, Blender scene builder, parallax, fonts, SFX |
+| `library/` | CC0 3D kits + reusable clip index |
+| `brand/` | channel identity package |
+| `prompts/` | versioned prompt templates |
+| `docs/` | spec, decisions, setup checklist, runbook |
+
+One-time human steps: [`docs/SETUP.md`](docs/SETUP.md). Operations: [`docs/RUNBOOK.md`](docs/RUNBOOK.md).

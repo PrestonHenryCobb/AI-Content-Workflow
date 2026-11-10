@@ -23,6 +23,15 @@
   post-processing (pitch down slightly, EQ, reverb, tape hiss) to make up for the plainer
   base voice. ElevenLabs stays as an optional config switch if budget grows.
 - **D10. Images: Flux Schnell (~$0.003/image)** via a pay-per-use API, at 6–8 stills per short.
+- **D11. Animation at $0** (owner, 2026-11-10): 2.5D depth parallax on every still,
+  procedural low-poly Blender scenes for 2–3 hero shots per short, a free ambient FX layer,
+  and a reusable clip library. Paid image-to-video is a config switch, off by default.
+- **D12. Budget split** (within the $24 cap): Anthropic $14, images $3, TTS $0, video $0,
+  shared reserve $7. A provider past its cap borrows from reserve; the global cap is hard.
+  The degradation ladder turns on one rung per 5% that projected spend overshoots 90% of cap.
+- **D13. Model routing:** Sonnet 5.5 writes, Opus 5.5 checks facts (it's a different model, so nothing
+  grades its own work), Haiku 5.5 does metadata, policy pre-screen and Blender scene specs,
+  Opus 5.5 does weekly planning. Prices live only in `config/models.yaml`.
 
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app

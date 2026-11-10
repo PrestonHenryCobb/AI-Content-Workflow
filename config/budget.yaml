@@ -1,0 +1,29 @@
+# Weekly spend governor. Owner cap: under $25/week (DECISIONS D6).
+week_starts_on: monday           # budget window resets 00:00 America/New_York
+global_weekly_usd: 24.00
+warn_at_fraction: 0.75           # alert
+degrade_at_fraction: 0.90        # start degradation ladder (projected spend)
+
+providers:                       # per-provider weekly caps (USD)
+  anthropic: 14.00
+  images: 3.00
+  tts: 0.00                      # Kokoro local
+  video: 0.00                    # paid image-to-video OFF
+  reserve: 7.00                  # retries / overflow, any provider
+
+# Degradation ladder, applied in order while projected spend > degrade_at_fraction.
+degradation_ladder:
+  - disable_paid_video
+  - blender_hero_shots_3_to_1
+  - library_clips_only
+  - batch_api_for_noncritical
+  - stills_per_short_8_to_6
+  - shorts_per_day_3_to_2
+  - compilation_reuse_narration
+
+youtube_quota:
+  daily_units: 10000
+  cost_videos_insert: 1600
+  cost_thumbnails_set: 50
+  cost_playlist_insert: 50
+  cost_comment_insert: 50

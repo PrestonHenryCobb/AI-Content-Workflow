@@ -1,0 +1,28 @@
+# Model routing per stage (GOD_PROMPT §3). Prices USD per 1M tokens, checked 2026-11.
+# Writer and judge are deliberately different models so nothing grades its own work.
+pricing:
+  claude-opus-5-5:   {input: 4.00, output: 20.00, cache_read: 0.20}
+  claude-sonnet-5-5: {input: 2.00, output: 10.00, cache_read: 0.10}
+  claude-haiku-5-5:  {input: 0.10, output: 0.50,  cache_read: 0.01}
+batch_discount: 0.5
+
+stages:
+  weekly_planning: {model: claude-opus-5-5,   effort: high}
+  discover:        {model: claude-sonnet-5-5, effort: medium}
+  verify:          {model: claude-sonnet-5-5, effort: high}
+  script:          {model: claude-sonnet-5-5, effort: high}
+  compilation_script: {model: claude-sonnet-5-5, effort: high, batch: true}
+  metadata:        {model: claude-haiku-5-5,  effort: low}
+  qa_fact:         {model: claude-opus-5-5,   effort: medium}
+  qa_policy:       {model: claude-haiku-5-5,  effort: medium}
+  qa_visual:       {model: claude-sonnet-5-5, effort: low}
+  scene_spec:      {model: claude-haiku-5-5,  effort: low}
+
+images:
+  provider: fal          # fal | replicate
+  model: flux-schnell
+  usd_per_image: 0.003
+  stills_per_short: 8
+
+tts:
+  provider: kokoro       # kokoro (local, free) | elevenlabs (optional)

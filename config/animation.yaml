@@ -1,0 +1,21 @@
+# $0 motion stack (DECISIONS D11).
+parallax:
+  enabled: true
+  depth_model: depth-anything-v2-small
+  moves: [push_in, dolly_left, dolly_right, handheld_sway, pull_out]
+blender:
+  enabled: true
+  hero_shots_per_short: 3
+  resolution: [360, 640]
+  engine: workbench              # workbench | cycles_low
+  templates: [hallway, motel_room, gas_station, forest_road, interrogation_room, living_room]
+  kits: [kenney, quaternius, polypizza_cc0]
+fx:
+  enabled: true
+  layers: [light_flicker, fog_drift, dust, vhs_glitch, crt_roll, date_stamp_blink, static_cut]
+clip_library:
+  enabled: true
+  prefer_library_match_score: 0.75
+paid_image_to_video:
+  enabled: false
+  max_per_week: 4

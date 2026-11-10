@@ -1,0 +1,9 @@
+# Written by the weekly learning stage (Stage 10). Seed values until analytics exist.
+updated: null
+hook_styles: [impossible_fact, last_known_words, wrong_detail, countdown]
+title_templates:
+  - "{hook_fact}"
+  - "The {place} case nobody can explain"
+  - "{name} vanished. Then {twist}."
+cta_variants: ["Case file continues Sunday.", "", "Full file in the weekly archive."]
+category_id: 24

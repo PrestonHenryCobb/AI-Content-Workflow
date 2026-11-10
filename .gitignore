@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+# runtime data (media lives in the bucket, never in git)
+data/*
+!data/.gitkeep
+!data/published_cases.json
+library/clips/*
+!library/clips/.gitkeep
+*.mp4
+*.wav
+*.mp3
+*.blend1
