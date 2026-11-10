@@ -28,7 +28,7 @@ def sc():
 # ----- prompts -----
 def test_every_prompt_fills(settings):
     assert "Cold Save" in prompts.load("script", voice_guide="v", cta="c", feedback="",
-                                       fact_pack="{}")
+                                       fact_pack="{}", hook_instruction="h", style_notes="")
     with pytest.raises(KeyError):
         prompts.load("script", voice_guide="v")
     assert prompts.version("script") >= 1

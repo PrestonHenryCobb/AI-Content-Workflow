@@ -44,8 +44,13 @@ def discover(llm: Completer, state: State, *, count: int = 8, hint: str = "",
              job_id: str | None = None, urgent: bool = False) -> list[CaseCandidate]:
     known = published_titles() + [r[0] for r in state.conn.execute(
         "SELECT title FROM cases").fetchall()]
+    from pipeline.analytics import current_mix
+
+    mix = current_mix(state, llm.settings)
+    mix_text = ", ".join(f"~{round(v * 100)}% {k.replace('_', ' ')}" for k, v in mix.items())
     prompt = prompts.load(
-        "discover", count=count, min_age=llm.settings.sources.get("min_case_age_years", 10),
+        "discover", count=count, mix=mix_text,
+        min_age=llm.settings.sources.get("min_case_age_years", 10),
         avoid="none", published="; ".join(known[-200:]) or "none",
         hint=f"Focus: {hint}" if hint else "",
     )

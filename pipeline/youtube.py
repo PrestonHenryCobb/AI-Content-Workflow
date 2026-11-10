@@ -79,7 +79,8 @@ class Credentials:
 COST = {"videos.insert": 1600, "thumbnails.set": 50, "playlistItems.insert": 50,
         "commentThreads.insert": 50, "channels.update": 50, "playlists.insert": 50,
         "playlists.list": 1, "channels.list": 1, "videos.list": 1, "watermarks.set": 50,
-        "channelBanners.insert": 50, "videos.update": 50}
+        "channelBanners.insert": 50, "videos.update": 50,
+        "analytics.query": 0}   # YouTube Analytics API has its own quota
 
 
 class YouTube:

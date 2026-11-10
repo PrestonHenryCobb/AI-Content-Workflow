@@ -91,9 +91,19 @@ def make_short(job_id: str, *, case_hint: str = "", offline: bool = False,
     checks: list[Check] = []
     if not job.has("script.json"):
         mark(Stage.SCRIPT, JobStatus.RUNNING, case_id=case.case_id)
+        from pipeline import strategy
+
+        hook_style = strategy.choose(state, "hook_style", list(strategy.HOOK_STYLES))
+        ctas = [str(c) for c in settings.strategy.get("cta_variants", [""])]
+        cta = strategy.choose(state, "cta", ctas)
+        strategy.record_arm(state, job_id, "hook_style", hook_style)
+        strategy.record_arm(state, job_id, "cta", cta)
+        notes = [str(n) for n in strategy.get(state, "writer_notes", [])]
+        meta.update({"hook_style": hook_style, "cta": cta})
         feedback = ""
         for attempt in range(MAX_REWRITES + 1):
-            sc = script.write_script(llm, pack, feedback=feedback, job_id=job_id, urgent=urgent)
+            sc = script.write_script(llm, pack, feedback=feedback, job_id=job_id, urgent=urgent,
+                                     hook_style=hook_style, cta=cta, style_notes=notes)
             problems = script.lint(sc, pack)
             if problems:
                 feedback = "\n".join(problems)

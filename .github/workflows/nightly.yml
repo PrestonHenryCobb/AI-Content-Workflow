@@ -39,6 +39,9 @@ jobs:
           media: "true"
       - name: Restore state
         run: scripts/state.sh pull
+      - name: Pull analytics (feeds the hook/CTA bandits)
+        continue-on-error: true
+        run: uv run --no-sync acw analytics
       - name: Nightly run
         env:
           DRY: ${{ inputs.dry_run }}

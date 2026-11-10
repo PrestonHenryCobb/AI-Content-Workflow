@@ -17,7 +17,7 @@ session starts from it.
 - [x] Phase 4: YouTube publisher + buffer (dry-run verified; live needs YouTube secrets)
 - [x] Phase 5: GitHub Actions automation (nightly, healthcheck, weekly), state persistence, alerts, digest
 - [x] Phase 6: weekly long-form compilation (offline-verified: 1920x1080/24fps, chapters, thumbnail)
-- [ ] Phase 7: analytics + learning loop
+- [x] Phase 7: analytics + learning loop (hook/CTA bandits, weekly planner)
 - [ ] Phase 8: TikTok / Instagram cross-posting
 - [ ] Phase 9: growth extras
 

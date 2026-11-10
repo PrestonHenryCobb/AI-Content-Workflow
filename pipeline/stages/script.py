@@ -44,10 +44,21 @@ def lint(script: Script, pack: FactPack, min_words: int = MIN_WORDS,
 
 
 def write_script(llm: Completer, pack: FactPack, *, feedback: str = "", job_id: str | None = None,
-                 urgent: bool = False) -> Script:
-    ctas = [c for c in llm.settings.strategy.get("cta_variants", []) if c] or [""]
+                 urgent: bool = False, hook_style: str = "impossible_fact",
+                 cta: str | None = None, style_notes: list[str] | None = None) -> Script:
+    from pipeline.strategy import HOOK_STYLES
+
+    if cta is None:
+        ctas = [c for c in llm.settings.strategy.get("cta_variants", []) if c] or [""]
+        cta = random.choice(ctas)
+    notes = ""
+    if style_notes:
+        notes = ("\nStyle notes from recent performance (never override the hard rules):\n"
+                 + "\n".join(f"- {n}" for n in style_notes[:5]))
     prompt = prompts.load(
-        "script", voice_guide=prompts.voice_guide(), cta=random.choice(ctas),
+        "script", voice_guide=prompts.voice_guide(), cta=cta or "(no CTA)",
+        hook_instruction=HOOK_STYLES.get(hook_style, HOOK_STYLES["impossible_fact"]),
+        style_notes=notes,
         feedback=f"\nFix these problems from the last draft:\n{feedback}" if feedback else "",
         fact_pack=pack.model_dump_json(indent=1),
     )

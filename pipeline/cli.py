@@ -175,6 +175,40 @@ def cmd_weekly(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_analytics(args: argparse.Namespace) -> int:
+    from pipeline import analytics
+    from pipeline.budget import Governor
+    from pipeline.stages import publish
+    from pipeline.youtube import Credentials, YouTube
+
+    settings, state = load_settings(), State()
+    publish.init(state)
+    try:
+        yt = YouTube(Credentials.from_env(), Governor(state, settings))
+    except RuntimeError as e:
+        print(f"skipped: {e}")
+        return 0
+    print(f"updated stats for {analytics.fetch(yt, state)} videos")
+    return 0
+
+
+def cmd_learn(args: argparse.Namespace) -> int:
+    from pipeline import analytics
+    from pipeline.budget import Governor
+    from pipeline.llm import LLM, Completer
+    from pipeline.offline import OfflineLLM
+    from pipeline.stages import publish
+
+    settings, state = load_settings(), State()
+    publish.init(state)
+    gov = Governor(state, settings)
+    llm: Completer = OfflineLLM(gov) if args.offline else LLM(gov)
+    plan = analytics.plan_week(llm, state, settings)
+    print("not enough data yet (need 6 videos with stats)" if plan is None else
+          json.dumps(analytics.summary(state), indent=2))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="acw", description="AI-Content-Workflow pipeline")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -210,6 +244,11 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--dry-run", action="store_true")
     w.add_argument("--post-digest", action="store_true")
     w.set_defaults(fn=cmd_weekly)
+    sub.add_parser("analytics", help="pull YouTube Analytics for recent videos").set_defaults(
+        fn=cmd_analytics)
+    ln = sub.add_parser("learn", help="weekly planner: insights, case mix, writer notes")
+    ln.add_argument("--offline", action="store_true")
+    ln.set_defaults(fn=cmd_learn)
     dg = sub.add_parser("digest", help="weekly owner digest")
     dg.add_argument("--post", action="store_true", help="open it as a GitHub issue")
     dg.set_defaults(fn=cmd_digest)

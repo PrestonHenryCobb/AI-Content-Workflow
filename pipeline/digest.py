@@ -56,6 +56,14 @@ def build(state: State, settings: Settings, now: datetime | None = None) -> str:
         f"- Claude calls: {sub.calls_week}/{sub.weekly_cap} (limit hits: {sub.limit_hits_week})",
         f"- Degradations active: {', '.join(st.active_degradations) or 'none'}",
     ]
+    from pipeline.analytics import summary
+
+    learned = summary(state)
+    if learned["insights"]:
+        lines += ["", "### What's working", *[f"- {i}" for i in learned["insights"]]]
+    if learned["hook_styles"]:
+        lines.append("- Hook styles (wins/losses): " + ", ".join(
+            f"{k} {w}/{lo}" for k, (w, lo) in learned["hook_styles"].items()))
     if failures:
         lines += ["", "### Recent failures", *[f"- `{j}`: {e}" for j, e in failures]]
     return "\n".join(lines)

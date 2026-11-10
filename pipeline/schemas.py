@@ -153,3 +153,16 @@ class QAReport(_M):
     @property
     def passed(self) -> bool:
         return all(c.passed for c in self.checks)
+
+
+# ---------- Stage 10: weekly planning ----------
+class CaseMix(_M):
+    unsolved: float = Field(ge=0.1, le=0.75)
+    solved_with_twist: float = Field(ge=0.1, le=0.75)
+    strange_but_true: float = Field(ge=0.1, le=0.75)
+
+
+class WeeklyPlan(_M):
+    insights: list[str] = Field(max_length=6)
+    case_mix: CaseMix
+    writer_notes: list[str] = Field(max_length=5)

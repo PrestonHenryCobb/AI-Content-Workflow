@@ -37,6 +37,9 @@ jobs:
         with:
           media: "true"
       - run: scripts/state.sh pull
+      - name: Weekly planner (insights, case mix, writer notes)
+        continue-on-error: true
+        run: uv run --no-sync acw learn
       - name: Compilation + digest
         env:
           DRY: ${{ inputs.dry_run }}

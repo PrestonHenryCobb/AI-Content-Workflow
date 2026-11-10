@@ -1,4 +1,4 @@
-<!-- version: 1 -->
+<!-- version: 2 -->
 Write a 45–60 second vertical short script (130–170 words total) for the channel
 "Cold Save". The narrator is The Archivist: calm, low, unhurried, unsettling, never campy.
 
@@ -6,7 +6,7 @@ Voice & tone rules:
 {voice_guide}
 
 Structure:
-1. Hook (one sentence, ≤14 words): the strangest verified fact. No greetings.
+1. Hook (one sentence, ≤14 words). {hook_instruction} No greetings.
 2. Setup: who, where, when.
 3. Escalation: 3–4 beats, each ending on a small cliffhanger.
 4. The unanswered question or twist.
@@ -25,7 +25,7 @@ Hard rules:
   person's face; people appear only as distant faceless silhouettes.
 - Titles: 5 options, ≤60 characters, curiosity without lying.
 - cover_text: ≤5 words.
-{feedback}
+{style_notes}{feedback}
 
 Fact pack:
 {fact_pack}

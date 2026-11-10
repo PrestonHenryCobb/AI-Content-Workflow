@@ -96,6 +96,11 @@ RESPONSES: dict[str, Any] = {
                 "hook_strength": 8, "pacing": 8, "clarity": 8, "fix_instructions": ""},
     "qa_policy": {"passed": True, "violations": [], "fix_instructions": ""},
     "qa_visual": {"passed": True, "problems": []},
+    "weekly_planning": {
+        "insights": ["(offline) Hooks that open on a precise time hold viewers longest."],
+        "case_mix": {"unsolved": 0.5, "solved_with_twist": 0.3, "strange_but_true": 0.2},
+        "writer_notes": ["Keep the second line under ten words."],
+    },
 }
 
 

@@ -114,6 +114,15 @@
   (YouTube only turns loud videos down, so slightly quiet is harmless.) Re-verify on the
   first live Kokoro run.
 
+- **D33. Learning loop:** daily analytics pull (videos 2–28 days old; YouTube Analytics has
+  its own quota). Success = average % viewed ≥ the median of all measured videos. Thompson
+  sampling (Beta(1,1) priors) chooses the **hook style** (impossible fact / last known /
+  wrong detail / countdown) and **CTA** per short, so new options keep getting explored.
+  Weekly, Opus reads the numbers and returns insights, a target case mix (moves ≤ 0.15 per
+  week, each type kept between 10% and 75%) and ≤ 5 writer style notes. All of it lives in the state DB,
+  not the code branch. Style notes are appended under "never override the hard rules".
+  Slot times are *not* auto-changed; the digest shows the data and the owner decides.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.
