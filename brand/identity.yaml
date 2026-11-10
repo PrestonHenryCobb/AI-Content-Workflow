@@ -1,0 +1,37 @@
+# Channel identity.
+name: Cold Save       # owner pick 2026-11-10 (DECISIONS D15)
+handle: "@coldsavefiles"
+tagline: "New case every 8 hours. Full files every Sunday."
+persona: >-
+  "The Archivist": an unseen narrator cataloguing recovered case files from unmarked
+  discs. Framing only; never invents facts about real cases (GOD_PROMPT §7.5).
+art:
+  profile: brand/art/profile_800.png
+  banner: brand/art/banner_2560x1440.png
+  watermark: brand/art/watermark_150.png
+  end_screen: brand/art/end_screen_1920x1080.png
+  thumbnail_example: brand/art/thumbnail_example_1280x720.png
+colors: {fog: "#26302a", sodium: "#ffb25c", sickly: "#c4e696", bone: "#ece6d6", warn: "#d8ff3c"}
+keywords:
+  - cold case
+  - unsolved mysteries
+  - true crime
+  - missing persons
+  - unsolved cases
+  - true crime shorts
+  - mystery
+  - disappearances
+  - creepy
+  - ps2 horror
+  - analog horror
+  - case files
+playlists:
+  - {title: "Still Missing", desc: "Disappearances with no answers yet."}
+  - {title: "Solved After Decades", desc: "Cold cases cracked years later."}
+  - {title: "Strange But True", desc: "Real cases that sound impossible."}
+  - {title: "By Decade: 1970s", desc: null}
+  - {title: "By Decade: 1980s", desc: null}
+  - {title: "By Decade: 1990s", desc: null}
+  - {title: "By Decade: 2000s", desc: null}
+  - {title: "Weekly Case Archive", desc: "Every Sunday: the week's cases, expanded."}
+  - {title: "Requested Cases", desc: "Cases picked from your comments."}

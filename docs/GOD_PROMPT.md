@@ -371,8 +371,8 @@ AI-Content-Workflow/
 │   ├── discover.py  verify.py  script.py  voice.py  art.py
 │   ├── render.py    qa.py      publish.py analytics.py learn.py
 │   ├── compilation.py  budget.py  buffer.py  state.py  providers/
-├── render/
-│   ├── shaders/              # PS2 post-process pass
+├── render/                   # non-code render assets (Blender scenes, SFX, templates)
+│   ├── shaders/              # (PS2 pass code lives in pipeline/fx/ps2.py)
 │   ├── blender/              # headless scene builder + location templates
 │   ├── parallax/             # depth-based 2.5D camera moves
 │   ├── fonts/  sfx/  templates/

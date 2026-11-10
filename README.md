@@ -1,4 +1,4 @@
-# AI-Content-Workflow
+# AI-Content-Workflow — Cold Save
 
 Autonomous faceless true-crime channel: cold cases and shocking real cases as 45–75 s
 Shorts in a lo-fi PS2-era horror style, 2–3 per day, plus a weekly long-form compilation.
@@ -12,7 +12,7 @@ session starts from it.
 ## Status
 - [x] Phase 0: spec ("god prompt")
 - [x] Phase 1: skeleton, config, state DB, budget governor, CI
-- [ ] Phase 2: brand package
+- [x] Phase 2: brand package (Cold Save)
 - [ ] Phase 3: offline vertical slice (one case → finished video)
 - [ ] Phase 4: YouTube publisher + buffer
 - [ ] Phase 5: GitHub Actions automation, alerts, weekly digest

@@ -40,6 +40,13 @@
   Subscription pacing: generation only runs 01:00–06:00 ET; caps of 40/run, 45/day,
   220/week calls; on a plan-limit hit, 5 h cooldown and the weekly cap shrinks 10%
   (floor 120). The API backend stays a disabled option, used only if the owner opts in.
+- **D15. Channel name: Cold Save, handle @coldsavefiles** (owner, 2026-11-10). Backups:
+  Unmarked Disc, Memory Card Missing. If @coldsavefiles is taken, try @coldsave,
+  @coldsavearchive, @coldsavecases in that order.
+- **D16. Channel art is procedural, not image-model generated:** low-poly hallway and
+  CRT TV drawn in code, then the PS2 post-process pass (`pipeline/fx/ps2.py`). $0, fully
+  original, regenerable with one command. The same PS2 pass will be applied to every video
+  frame. Pixel text uses Pillow's built-in bitmap font, so there's no font license to track.
 
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
