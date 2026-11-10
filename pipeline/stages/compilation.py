@@ -102,9 +102,9 @@ def write_chapter(llm: Completer, job: Job, *, reuse: bool, urgent: bool = True)
             short_script=qa.script_text(short) + feedback,
             fact_pack=pack.model_dump_json(indent=1)),
             json_schema=Script.json_schema(), job_id=f"weekly:{job.id}", urgent=urgent)
-        ch = Script.model_validate(res.data).model_copy(update={"case_id": pack.case_id})
+        ch = script.normalize(Script.model_validate(res.data)).model_copy(
+            update={"case_id": pack.case_id})
         problems = script.lint(ch, pack, CH_MIN_WORDS, CH_MAX_WORDS)
-        problems = [p for p in problems if "hook must equal" not in p]
         if problems:
             feedback = "\n\nFix: " + "; ".join(problems)
             continue

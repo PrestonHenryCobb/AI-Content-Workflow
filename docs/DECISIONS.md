@@ -147,6 +147,12 @@
   so it needs separate channels: owner decision), thumbnail A/B (Test & Compare isn't in the
   API), archivist storyline and Patreon/newsletter (wait for an audience).
 
+- **D37. Name gate fix (found on the first live run):** a blocked person's surname alone no
+  longer counts as a violation when an allowed person shares it. Family members (always
+  blocked) usually share the victim's surname, so the old check rejected every script about
+  a named victim. Full blocked names, and unique blocked surnames, are still rejected.
+  A hook that differs from line 1 is now corrected automatically instead of costing a rewrite.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.

@@ -68,7 +68,9 @@ def cmd_make_short(args: argparse.Namespace) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     res = make_short(args.job_id, case_hint=args.case, offline=args.offline, urgent=args.urgent)
     if res.report is None:
-        print(f"job {args.job_id}: stopped before QA (see `acw status` / state DB)")
+        row = State().get_job(args.job_id)
+        why = f"{row['stage']} / {row['status']}: {row['error']}" if row else "unknown"
+        print(f"job {args.job_id}: stopped before QA at {why}")
         return 1
     for c in res.report.checks:
         print(f"{'PASS' if c.passed else 'FAIL'}  {c.name:14} {c.detail}")

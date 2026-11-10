@@ -67,6 +67,7 @@ def make_short(job_id: str, *, case_hint: str = "", offline: bool = False,
             found = discover.discover(llm, state, count=5, hint=case_hint,
                                        job_id=job_id, urgent=urgent)
             if not found:
+                log.info("discover: no eligible, non-duplicate cases returned")
                 mark(Stage.DISCOVER, JobStatus.FAILED, "no eligible cases")
                 return Result(job, None, None)
             cand = found[0]
@@ -79,6 +80,7 @@ def make_short(job_id: str, *, case_hint: str = "", offline: bool = False,
         try:
             pack = verify.verify(llm, case, job_id=job_id, urgent=urgent)
         except verify.CaseBlocked as e:
+            log.info("verify: case blocked: %s", e)
             with state.tx() as c:
                 c.execute("UPDATE cases SET status = 'blocked' WHERE case_id = ?",
                           (case.case_id,))
@@ -108,6 +110,7 @@ def make_short(job_id: str, *, case_hint: str = "", offline: bool = False,
             problems = script.lint(sc, pack)
             if problems:
                 feedback = "\n".join(problems)
+                log.info("script attempt %d failed lint: %s", attempt + 1, feedback)
                 continue
             fact_chk, quality, fact_fix = qa.fact_gate(llm, pack, sc, job_id=job_id, urgent=urgent)
             pol_chk, pol_fix = qa.policy_gate(llm, pack, sc, job_id=job_id, urgent=urgent)

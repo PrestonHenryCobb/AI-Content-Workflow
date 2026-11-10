@@ -191,3 +191,26 @@ def test_enforce_true_peak_fixes_hot_audio(tmp_path):
     assert loudness(v)[1] > -1.0
     assert enforce_true_peak(v) < 0
     assert loudness(v)[1] <= -1.2
+
+
+def test_family_surname_does_not_block_allowed_victim(sc, pack):
+    from pipeline.schemas import Person
+
+    people = [Person(role="victim", name="Jane Smith", name_allowed=True),
+              Person(role="family", name="Mary Smith", name_allowed=False),
+              Person(role="uncharged_person_of_interest", name="Robert Doyle", name_allowed=False)]
+    p2 = pack.model_copy(update={"people": people})
+    lines = list(sc.lines)
+    lines[2] = lines[2].model_copy(update={"text": "Jane Smith never came home that night."})
+    ok = sc.model_copy(update={"lines": lines})
+    assert script.name_violations(ok, p2) == []
+    lines[3] = lines[3].model_copy(update={"text": "Her mother Mary Smith called police."})
+    assert script.name_violations(sc.model_copy(update={"lines": lines}), p2)
+    lines[3] = lines[3].model_copy(update={"text": "Detectives questioned Doyle twice."})
+    assert script.name_violations(sc.model_copy(update={"lines": lines}), p2) == [
+        "uses a name that is not allowed: doyle"]
+
+
+def test_normalize_fixes_hook(sc):
+    drift = sc.model_copy(update={"hook": "something else"})
+    assert script.normalize(drift).hook == sc.lines[0].text
