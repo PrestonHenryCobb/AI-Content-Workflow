@@ -106,3 +106,14 @@ def test_script_prompt_gets_hook_and_notes(state, settings):
     p = captured["prompt"]
     assert strategy.HOOK_STYLES["countdown"] in p
     assert "Shorter second line." in p and "never override the hard rules" in p
+
+
+def test_prune_deletes_old_api_data_but_keeps_learning(state):
+    from datetime import timedelta
+
+    seed_stats(state, [("a", 90), ("a", 80), ("b", 20), ("b", 30)])
+    before = strategy.arm_stats(state, "hook_style")
+    later = NOW + timedelta(days=31)
+    assert analytics.prune(state, later) == 4
+    assert state.conn.execute("SELECT COUNT(*) FROM video_stats").fetchone()[0] == 0
+    assert strategy.arm_stats(state, "hook_style") == before

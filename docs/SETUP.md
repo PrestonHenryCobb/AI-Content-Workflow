@@ -5,7 +5,7 @@ click-paths as each integration is built.
 
 | # | Step | Needed by phase | Done |
 |---|---|---|---|
-| 1 | Create a Google account + YouTube **brand** channel named **Cold Save**, handle **@coldsavefiles** (fallbacks in `docs/DECISIONS.md` D15); verify phone (unlocks custom thumbnails, >15 min uploads). Add a contact email on the About page (the description promises one for takedown requests) | 4 | ☐ |
+| 1 | Create a Google account + YouTube **brand** channel named **Cold Save**, handle **@coldsavecases** (DECISIONS D41); verify phone (unlocks custom thumbnails, >15 min uploads). Add a contact email on the About page (the description promises one for takedown requests) | 4 | ☐ |
 | 1b | YouTube Studio → Customization: upload `brand/art/profile_800.png` (profile picture) and `brand/art/watermark_150.png` (Branding → video watermark). The API can't set these two; step 4b does the rest | 4 | ☐ |
 | 1c | Optional: run Actions → **brand-check** to confirm handle/domain availability | 2 | ☐ |
 | 2 | Google Cloud project + OAuth client: see **Step 4 walkthrough** below | 4 | ☐ |
@@ -30,6 +30,22 @@ nightly ~40–70 min × 30 + healthcheck ~2 min × 180 + weekly ≈ **1,600–2,
 may go over. Options: make the repo public (unlimited minutes; secrets stay secret, and
 the code contains nothing private), or set `shorts_per_day: 2`. The weekly digest will
 show if you're close.
+
+## Step 4a: public pages for Google's Branding page and the API audit
+
+1. Repo **Settings → Pages** → *Build and deployment* → Source: **GitHub Actions**.
+2. Actions → **pages** → Run workflow (it also runs on any change to `site/`).
+3. The site is then at `https://prestonhenrycobb.github.io/AI-Content-Workflow/` with
+   `privacy.html` and `terms.html`.
+4. Google Cloud → **Google Auth Platform → Branding**:
+   - App name: `Cold Save Pipeline` · User support email: your email
+   - App logo: **leave empty** (uploading a logo requires Google's brand verification)
+   - Application home page: `https://prestonhenrycobb.github.io/AI-Content-Workflow/`
+   - Privacy policy: `https://prestonhenrycobb.github.io/AI-Content-Workflow/privacy.html`
+   - Terms of service: `https://prestonhenrycobb.github.io/AI-Content-Workflow/terms.html`
+   - Authorized domains: `prestonhenrycobb.github.io`
+   - Developer contact: your email → Save
+5. **Audience → Publish app** (status *In production*).
 
 ## Step 4 walkthrough: YouTube API access (browser only)
 

@@ -1,6 +1,6 @@
 # Channel identity.
 name: Cold Save       # owner pick 2026-11-10 (DECISIONS D15)
-handle: "@coldsavefiles"
+handle: "@coldsavecases"   # owner, 2026-11-11 (DECISIONS D41)
 tagline: "New case every 8 hours. Full files every Sunday."
 persona: >-
   "The Archivist": an unseen narrator cataloguing recovered case files from unmarked

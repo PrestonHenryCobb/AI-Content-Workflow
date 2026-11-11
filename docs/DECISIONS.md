@@ -176,6 +176,15 @@
   with an untrimmed fallback for all-silent offline audio. Raw vs trimmed line durations are
   logged, and the gap check reports where the gaps are.
 
+- **D41. Handle is @coldsavecases** (owner, 2026-11-11), the third fallback from D15.
+
+- **D42. Public home page, privacy policy and terms on GitHub Pages** (`site/`, deployed by
+  the `pages` workflow), for Google's OAuth Branding page and the YouTube API audit.
+  Contact goes through the channel's About page or GitHub issues; no personal email is
+  published. To make the policy's 30-day claim true, `analytics.prune` deletes video stats
+  older than 30 days after folding their outcomes into per-arm win/loss counts (no API data
+  kept). Comment text is never stored.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.

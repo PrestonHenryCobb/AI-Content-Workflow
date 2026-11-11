@@ -59,7 +59,29 @@ def fetch(yt: YouTube, state: State, now: datetime | None = None) -> int:
                     (vid, job_of.get(vid), now_iso(), views, pct, dur, likes, comments, subs))
             n += 1
     label(state)
+    prune(state, now)
     return n
+
+
+RETENTION = timedelta(days=30)
+
+
+def prune(state: State, now: datetime) -> int:
+    """YouTube API Services policy: stored API data must be refreshed or deleted within 30
+    days. Fold old rows' outcomes into per-arm win/loss counts (no API data), then delete
+    them. Returns rows deleted."""
+    strategy.init(state)
+    cutoff = (now - RETENTION).isoformat(timespec="seconds")
+    with state.tx() as c:
+        c.execute(
+            "INSERT INTO arm_archive (name, value, wins, losses) "
+            "SELECT a.name, a.value, SUM(v.success), SUM(1 - v.success) FROM arms a "
+            "JOIN video_stats v ON v.job_id = a.job_id "
+            "WHERE v.fetched_at < ? AND v.success IS NOT NULL GROUP BY a.name, a.value "
+            "ON CONFLICT(name, value) DO UPDATE SET wins = wins + excluded.wins, "
+            "losses = losses + excluded.losses", (cutoff,))
+        cur = c.execute("DELETE FROM video_stats WHERE fetched_at < ?", (cutoff,))
+        return int(cur.rowcount)
 
 
 def label(state: State) -> None:

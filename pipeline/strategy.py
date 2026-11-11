@@ -34,6 +34,13 @@ CREATE TABLE IF NOT EXISTS video_stats (
     subs       INTEGER,
     success    INTEGER          -- 1 if avg_view_pct >= rolling median at labeling time
 );
+CREATE TABLE IF NOT EXISTS arm_archive (   -- outcome counts folded in from pruned stats
+    name    TEXT NOT NULL,                    -- (no YouTube API data is kept here)
+    value   TEXT NOT NULL,
+    wins    INTEGER NOT NULL DEFAULT 0,
+    losses  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (name, value)
+);
 CREATE TABLE IF NOT EXISTS strategy_kv (
     key        TEXT PRIMARY KEY,
     value      TEXT NOT NULL,
@@ -67,7 +74,12 @@ def arm_stats(state: State, name: str) -> dict[str, tuple[int, int]]:
         "SELECT a.value, SUM(v.success), SUM(1 - v.success) FROM arms a "
         "JOIN video_stats v ON v.job_id = a.job_id WHERE a.name = ? AND v.success IS NOT NULL "
         "GROUP BY a.value", (name,)).fetchall()
-    return {r[0]: (int(r[1] or 0), int(r[2] or 0)) for r in rows}
+    out = {r[0]: (int(r[1] or 0), int(r[2] or 0)) for r in rows}
+    for value, w, lo in state.conn.execute(
+            "SELECT value, wins, losses FROM arm_archive WHERE name = ?", (name,)):
+        a, b = out.get(value, (0, 0))
+        out[value] = (a + int(w), b + int(lo))
+    return out
 
 
 def choose(state: State, name: str, options: list[str],

@@ -1,6 +1,6 @@
 # Channel name shortlist
 
-**Picked: Cold Save (@coldsavefiles)** — owner, 2026-11-10. Backups if the handle is taken: Unmarked Disc, Memory Card Missing.
+**Picked: Cold Save** — owner, 2026-11-10. **Handle: @coldsavecases** (owner, 2026-11-11; @coldsavefiles was not used). Backups if the handle is taken: Unmarked Disc, Memory Card Missing.
 
 Scored 1–5 on: **Mem**orability, **Niche** (signals true crime / cold cases), **Look**
 (fits the Lost PS2 Disc aesthetic), **Safe** (search-safe, not generic, no trademark or
