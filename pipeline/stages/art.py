@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -19,6 +20,7 @@ from pipeline.scenes import render_frame, template_for_prompt
 from pipeline.schemas import Script, Shot
 
 FAL_URL = "https://fal.run/fal-ai/flux/schnell"
+UA = "cold-save-pipeline/0.1 (+python-urllib)"
 
 
 def style_prompt(shot: Shot, style: dict[str, object]) -> str:
@@ -30,11 +32,17 @@ def flux(prompt: str, negative: str, seed: int, key: str, out: Path) -> None:  #
         "prompt": f"{prompt}. Avoid: {negative}", "image_size": "portrait_16_9",
         "num_inference_steps": 4, "num_images": 1, "enable_safety_checker": True, "seed": seed,
     }).encode()
-    req = urllib.request.Request(FAL_URL, data=body, method="POST", headers={
-        "Authorization": f"Key {key}", "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        url = json.loads(r.read())["images"][0]["url"]
-    with urllib.request.urlopen(url, timeout=120) as r:
+    headers = {"Authorization": f"Key {key}", "Content-Type": "application/json",
+               "Accept": "application/json", "User-Agent": UA}
+    req = urllib.request.Request(FAL_URL, data=body, method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=120) as r:
+            url = json.loads(r.read())["images"][0]["url"]
+    except urllib.error.HTTPError as e:
+        detail = e.read()[:300].decode("utf-8", "replace")
+        raise RuntimeError(f"fal HTTP {e.code}: {detail}") from e
+    img = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(img, timeout=120) as r:
         out.write_bytes(r.read())
 
 

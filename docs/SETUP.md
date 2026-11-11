@@ -8,9 +8,9 @@ click-paths as each integration is built.
 | 1 | Create a Google account + YouTube **brand** channel named **Cold Save**, handle **@coldsavefiles** (fallbacks in `docs/DECISIONS.md` D15); verify phone (unlocks custom thumbnails, >15 min uploads). Add a contact email on the About page (the description promises one for takedown requests) | 4 | ☐ |
 | 1b | YouTube Studio → Customization: upload `brand/art/profile_800.png` (profile picture) and `brand/art/watermark_150.png` (Branding → video watermark). The API can't set these two; step 4b does the rest | 4 | ☐ |
 | 1c | Optional: run Actions → **brand-check** to confirm handle/domain availability | 2 | ☐ |
-| 2 | [console.cloud.google.com](https://console.cloud.google.com) → New project → APIs & Services → Library → enable **YouTube Data API v3** and **YouTube Analytics API** → OAuth consent screen (External; add your Google account as a test user for now) → Credentials → Create credentials → OAuth client ID → **Desktop app**. Save the client ID and secret as GitHub secrets `YOUTUBE_CLIENT_ID`, `YOUTUBE_CLIENT_SECRET` | 4 | ☐ |
-| 3 | Set the OAuth consent screen to **In production** (otherwise refresh tokens expire after 7 days) | 4 | ☐ |
-| 4 | Get a refresh token, either way: **(a) no install:** [OAuth Playground](https://developers.google.com/oauthplayground) → gear icon → *Use your own OAuth credentials* → paste client ID/secret → enter the 4 scopes from `pipeline/youtube.py` → Authorize (pick the Cold Save channel) → *Exchange authorization code for tokens* → copy the refresh token (for this, also add `https://developers.google.com/oauthplayground` as an authorized redirect URI by making a **Web application** client instead of Desktop). **(b)** `python scripts/auth_youtube.py` on your computer. Save it as GitHub secret `YOUTUBE_REFRESH_TOKEN` | 4 | ☐ |
+| 2 | Google Cloud project + OAuth client: see **Step 4 walkthrough** below | 4 | ☐ |
+| 3 | Publish the OAuth app to **In production** *before* minting the token (Testing-mode refresh tokens expire after 7 days) | 4 | ☐ |
+| 4 | Mint the refresh token in OAuth Playground (no install): see **Step 4 walkthrough** below → secret `YOUTUBE_REFRESH_TOKEN` | 4 | ☐ |
 | 4b | Actions → **channel-setup** → Run workflow with *apply* checked → sets description, keywords, banner, creates playlists, commits `config/youtube_ids.json` | 4 | ☐ |
 | 5 | Submit the **YouTube API compliance audit** — until approved, API uploads are forced private | 4 | ☐ |
 | 6 | Request a YouTube quota increase (default 10,000 units/day ≈ 6 uploads) | 4 | ☐ |
@@ -30,3 +30,20 @@ nightly ~40–70 min × 30 + healthcheck ~2 min × 180 + weekly ≈ **1,600–2,
 may go over. Options: make the repo public (unlimited minutes; secrets stay secret, and
 the code contains nothing private), or set `shorts_per_day: 2`. The weekly digest will
 show if you're close.
+
+## Step 4 walkthrough: YouTube API access (browser only)
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → project picker → **New project** → name `cold-save` → Create, then select it.
+2. **APIs & Services → Library** → enable **YouTube Data API v3**, then **YouTube Analytics API**.
+3. **Google Auth Platform** (or "OAuth consent screen") → Get started → app name `Cold Save Pipeline`, your email as support and contact → audience **External** → Create.
+4. **Audience** → **Publish app** → confirm (status: *In production*). Unverified is fine for your own account; Google shows a warning screen you can click past.
+5. **Clients** → **Create client** → type **Web application** → name `cold-save-github` → under *Authorized redirect URIs* add `https://developers.google.com/oauthplayground` → Create. Copy the **Client ID** and **Client secret** into GitHub secrets `YOUTUBE_CLIENT_ID` and `YOUTUBE_CLIENT_SECRET`.
+6. [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground) → gear icon (top right) → tick **Use your own OAuth credentials** → paste the client ID and secret.
+7. In *Step 1* on the left, type these four scopes into the box (one at a time, then **Authorize APIs**):
+   `https://www.googleapis.com/auth/youtube.upload`
+   `https://www.googleapis.com/auth/youtube`
+   `https://www.googleapis.com/auth/youtube.force-ssl`
+   `https://www.googleapis.com/auth/yt-analytics.readonly`
+8. Sign in → **choose the Cold Save channel** (not your personal one) → "Google hasn't verified this app" → **Advanced → Go to Cold Save Pipeline** → allow all.
+9. *Step 2* → **Exchange authorization code for tokens** → copy the **Refresh token** → GitHub secret `YOUTUBE_REFRESH_TOKEN`.
+10. Afterwards, gear icon → untick "Use your own OAuth credentials" (the playground doesn't keep your token).
