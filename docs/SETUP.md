@@ -12,7 +12,7 @@ click-paths as each integration is built.
 | 3 | Publish the OAuth app to **In production** *before* minting the token (Testing-mode refresh tokens expire after 7 days) | 4 | ☐ |
 | 4 | Mint the refresh token in OAuth Playground (no install): see **Step 4 walkthrough** below → secret `YOUTUBE_REFRESH_TOKEN` | 4 | ☐ |
 | 4b | Actions → **channel-setup** with *apply* checked | 4 | ☑ done 2026-11-11 |
-| 5 | Submit the **YouTube API compliance audit** — until approved, API uploads are forced private | 4 | ☐ |
+| 5 | Submit the **YouTube API audit + quota request** using the copy-paste answers in `docs/API_AUDIT.md`. Until it is approved, API uploads are forced private | 4 | ☐ |
 | 6 | Quota increase: included in the same form (20,000 units/day), see `docs/API_AUDIT.md` | 4 | ☐ |
 | 7 | On your own computer: install Claude Code, run `claude setup-token` (uses your Pro plan), save the token as GitHub secret `CLAUDE_CODE_OAUTH_TOKEN`. Do **not** add an `ANTHROPIC_API_KEY` secret | 3 | ☐ |
 | 8 | fal.ai API key for Flux Schnell stills → GitHub secret `FAL_KEY` (optional: without it stills are procedural) | 3 | ☐ |
