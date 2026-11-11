@@ -11,9 +11,9 @@ click-paths as each integration is built.
 | 2 | Google Cloud project + OAuth client: see **Step 4 walkthrough** below | 4 | ☐ |
 | 3 | Publish the OAuth app to **In production** *before* minting the token (Testing-mode refresh tokens expire after 7 days) | 4 | ☐ |
 | 4 | Mint the refresh token in OAuth Playground (no install): see **Step 4 walkthrough** below → secret `YOUTUBE_REFRESH_TOKEN` | 4 | ☐ |
-| 4b | Actions → **channel-setup** → Run workflow with *apply* checked → sets description, keywords, banner, creates playlists, commits `config/youtube_ids.json` | 4 | ☐ |
+| 4b | Actions → **channel-setup** with *apply* checked | 4 | ☑ done 2026-11-11 |
 | 5 | Submit the **YouTube API compliance audit** — until approved, API uploads are forced private | 4 | ☐ |
-| 6 | Request a YouTube quota increase (default 10,000 units/day ≈ 6 uploads) | 4 | ☐ |
+| 6 | Quota increase: included in the same form (20,000 units/day), see `docs/API_AUDIT.md` | 4 | ☐ |
 | 7 | On your own computer: install Claude Code, run `claude setup-token` (uses your Pro plan), save the token as GitHub secret `CLAUDE_CODE_OAUTH_TOKEN`. Do **not** add an `ANTHROPIC_API_KEY` secret | 3 | ☐ |
 | 8 | fal.ai API key for Flux Schnell stills → GitHub secret `FAL_KEY` (optional: without it stills are procedural) | 3 | ☐ |
 | 9 | ~~Cloud bucket~~ not needed: state lives on a `state` branch and a `buffer` release (DECISIONS D27) | 5 | ☑ |
