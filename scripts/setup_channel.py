@@ -49,11 +49,24 @@ def main() -> None:
     print(f"Channel: {ident['name']} ({ident['handle']})")
     print(f"Description: {len(desc)} chars\nKeywords: {kw}")
     print("Playlists:", ", ".join(p["title"] for p in playlists))
-    if not a.apply:
-        print("\n(dry run; pass --apply to change the channel)")
+    try:
+        yt = YouTube(Credentials.from_env(), Governor(State(), load_settings()))
+    except RuntimeError as e:
+        print(f"\n{e}")
+        if a.apply:
+            raise
+        print("(dry run without credentials: nothing checked)")
         return
-    yt = YouTube(Credentials.from_env(), Governor(State(), load_settings()))
-    ch = yt.my_channel()
+    ch = yt.my_channel()     # read-only, 1 quota unit: proves the token works
+    snip = ch.get("snippet", {})
+    print(f"\nSigned in to channel: {snip.get('title')!r} {snip.get('customUrl', '')} "
+          f"(id {ch['id']})")
+    if snip.get("customUrl", "").lower().lstrip("@") != ident["handle"].lower().lstrip("@"):
+        print(f"WARNING: expected {ident['handle']}. Did you pick the right channel when "
+              "authorizing? If not, mint the refresh token again and choose Cold Save.")
+    if not a.apply:
+        print("(dry run: nothing changed; run with apply checked to update the channel)")
+        return
     branding = ch.get("brandingSettings", {})
     branding.setdefault("channel", {}).update(
         {"description": desc, "keywords": kw, "country": "US", "defaultLanguage": "en"})
