@@ -7,6 +7,7 @@ Providers:
 
 from __future__ import annotations
 
+import logging
 import wave
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -17,7 +18,11 @@ import numpy as np
 from pipeline.media import duration, ffmpeg
 from pipeline.schemas import Script
 
+log = logging.getLogger("acw")
 SR = 24_000
+# Trim TTS padding from both ends of each line (reverse trick: silenceremove only trims starts).
+TRIM = ("silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.05,areverse,"
+        "silenceremove=start_periods=1:start_threshold=-50dB:start_silence=0.05,areverse")
 GAP_S = 0.35
 WORDS_PER_S = 2.6
 
@@ -119,11 +124,16 @@ def narrate(script: Script, out_dir: Path, voice_cfg: dict[str, Any],
     for i, line in enumerate(script.lines):
         raw, done = parts / f"l{i:02d}_raw.wav", parts / f"l{i:02d}.wav"
         tts.synth(line.text, raw)
-        chain = [pitch, reverb]
+        chain = [TRIM, pitch, reverb]
         if i == 0:  # radio EQ on the hook
-            chain.insert(0, f"highpass=f=300,lowpass=f={int(fx.get('lowpass_hz_hook', 3400))}")
+            chain.insert(1, f"highpass=f=300,lowpass=f={int(fx.get('lowpass_hz_hook', 3400))}")
         ffmpeg("-i", str(raw), "-af", ",".join(chain), "-ar", str(SR), "-ac", "1", str(done))
         d = duration(done)
+        if d < 0.3:   # all-silent input (offline mode) would trim to nothing: keep it untrimmed
+            ffmpeg("-i", str(raw), "-af", ",".join(c for c in chain if c != TRIM),
+                   "-ar", str(SR), "-ac", "1", str(done))
+            d = duration(done)
+        log.info("voice line %d: raw %.2fs -> trimmed+fx %.2fs", i, duration(raw), d)
         words = [Word(w.w, w.start + t, w.end + t) for w in tts.align(done, line.text)]
         timings.append(LineTiming(i, line.text, t, t + d, words))
         files.append(done)

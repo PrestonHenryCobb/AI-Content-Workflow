@@ -70,8 +70,9 @@ def technical_checks(video: Path, narration: Path | None, *, size: tuple[int, in
                         detail=f"{lufs:.1f} LUFS, peak {peak:.1f} dBFS"))
     if narration is not None:
         gaps = [g for g in silences(narration, 1.5) if g[0] > 0.1]   # ignore leading silence
+        where = ", ".join(f"{a:.1f}-{b:.1f}s" for a, b in gaps[:4])
         checks.append(Check(name="silent_gaps", passed=not gaps,
-                            detail=f"{len(gaps)} gaps > 1.5s"))
+                            detail=f"{len(gaps)} gaps > 1.5s" + (f" at {where}" if gaps else "")))
     return checks
 
 

@@ -234,3 +234,24 @@ def test_descriptive_names_and_common_words_never_block(sc, pack):
 def test_normalize_fixes_hook(sc):
     drift = sc.model_copy(update={"hook": "something else"})
     assert script.normalize(drift).hook == sc.lines[0].text
+
+
+def test_voice_trims_tts_padding(tmp_path, sc, settings, monkeypatch):
+    import numpy as np
+
+    from pipeline.media import silences
+    from pipeline.stages import voice
+
+    class PaddedTone:
+        def synth(self, text, out):
+            t = np.arange(int(voice.SR * 1.2)) / voice.SR
+            pad = np.zeros(int(voice.SR * 0.9), dtype=np.float32)
+            voice._write_wav(out, np.concatenate([pad, 0.3 * np.sin(2 * np.pi * 200 * t), pad]))
+
+        def align(self, wav, text):
+            return voice.proportional_words(text, 0.0, voice.duration(wav))
+
+    monkeypatch.setattr(voice, "make_tts", lambda cfg, offline: PaddedTone())
+    wav, timings = voice.narrate(sc, tmp_path, settings.voice)
+    assert [g for g in silences(wav, 1.5) if g[0] > 0.1] == []
+    assert all(t.end - t.start < 2.2 for t in timings)       # ~1.2 s tone + reverb tail

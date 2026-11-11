@@ -170,6 +170,12 @@
   allowed person shares it. The verify prompt asks for "Unnamed" when no name was published.
   The Haiku policy gate also receives the blocked names and judges usage in context, as a second layer.
 
+- **D40. Trim TTS padding per line (fourth live run):** the first fully rendered real short
+  passed every check except silent gaps: 12 gaps over 1.5 s, one per line break (13 lines).
+  Each narration line is now trimmed at both ends (silenceremove, -50 dB) before effects,
+  with an untrimmed fallback for all-silent offline audio. Raw vs trimmed line durations are
+  logged, and the gap check reports where the gaps are.
+
 ## Open
 - **Q1. Hands-off ceiling.** The YouTube API audit, TikTok audit, and OAuth app
   verification are one-time human steps. Until they pass, uploads are forced private.
